@@ -22,6 +22,7 @@ public class UserController {
     @RequestMapping(method = RequestMethod.POST)
     public ResponseEntity<String> createUser(@RequestBody User user){
         try {
+            //user.setActivated(false);
             return new ResponseEntity<>(userService.addUser(user).toString(), HttpStatus.OK);
         } catch (SQLDataException e) {
             throw new ResponseStatusException(
@@ -30,7 +31,6 @@ public class UserController {
     }
 
     @RequestMapping(method = RequestMethod.GET)
-
     public ResponseEntity<User> getUserById(@RequestParam int id){
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }

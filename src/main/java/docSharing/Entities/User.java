@@ -13,6 +13,7 @@ public class User {
     @Column(unique = true)
     private String email;
     private String password;
+    private Boolean isActivated = false;
 
 
     public void setId(int id) {
@@ -46,7 +47,13 @@ public class User {
     public void setPassword(String password) {
         this.password = password;
     }
+    public void setActivated(Boolean activated) {
+        isActivated = activated;
+    }
 
+    public Boolean getActivated() {
+        return isActivated;
+    }
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
