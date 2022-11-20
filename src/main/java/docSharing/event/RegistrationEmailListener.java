@@ -1,18 +1,26 @@
 package docSharing.event;
 
 import docSharing.Entities.User;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.util.Properties;
 
-@Component
+
+@Configuration
+@PropertySource("classpath:application.properties")
 public class RegistrationEmailListener{
+    @Autowired
+    private Environment env;
     public void confirmRegistration(User user,String token) {
         String to = user.getEmail();
-        String from = "safaa8721@gmail.com";
+        String from = env.getProperty("email");
         String subject = "Registration Confirmation";
         String url = "/user/confirmRegistration?token=" + token;
         String message = "Thank you for registering. Please click on the below link to activate your account.";
@@ -20,7 +28,7 @@ public class RegistrationEmailListener{
         Session session = Session.getInstance(props, new javax.mail.Authenticator() {
             protected PasswordAuthentication getPasswordAuthentication() {
                 return new PasswordAuthentication(
-                        from, "wxrsqtxgqefkqmdg");
+                        from, env.getProperty("password"));
             }
         });
         try {

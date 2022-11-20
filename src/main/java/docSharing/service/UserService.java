@@ -5,6 +5,7 @@ import docSharing.Entities.VerificationToken;
 import docSharing.event.RegistrationEmailListener;
 import docSharing.repository.TokenRepository;
 import docSharing.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLDataException;
@@ -14,6 +15,8 @@ import java.util.UUID;
 @Service
 public class UserService {
 
+    @Autowired
+    private RegistrationEmailListener emailListener;
     private final UserRepository userRepository;
     private final TokenRepository tokenRepository;
     public UserService(UserRepository userRepository, TokenRepository tokenRepository) {
@@ -30,7 +33,7 @@ public class UserService {
         String token = UUID.randomUUID().toString();
         VerificationToken newUserToken = new VerificationToken(token, user);
         tokenRepository.save(newUserToken);
-        new RegistrationEmailListener().confirmRegistration(user,token);
+        emailListener.confirmRegistration(user,token);
         return userRepository.save(user);
     }
     public String confirmRegistration(String token){
