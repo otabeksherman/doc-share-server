@@ -2,9 +2,8 @@ package docSharing.service;
 
 import docSharing.Entities.User;
 import docSharing.Entities.VerificationToken;
-import docSharing.event.OnRegistrationSuccessEvent;
 import docSharing.event.RegistrationEmailListener;
-import docSharing.repository.TokenDAO;
+import docSharing.repository.TokenRepository;
 import docSharing.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
@@ -16,8 +15,8 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final TokenDAO tokenRepository;
-    public UserService(UserRepository userRepository, TokenDAO tokenRepository) {
+    private final TokenRepository tokenRepository;
+    public UserService(UserRepository userRepository, TokenRepository tokenRepository) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
     }
@@ -31,7 +30,7 @@ public class UserService {
         String token = UUID.randomUUID().toString();
         VerificationToken newUserToken = new VerificationToken(token, user);
         tokenRepository.save(newUserToken);
-        new RegistrationEmailListener().confirmRegistration(new OnRegistrationSuccessEvent(user),token);
+        new RegistrationEmailListener().confirmRegistration(user,token);
         return userRepository.save(user);
     }
     public String confirmRegistration(String token){

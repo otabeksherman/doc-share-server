@@ -27,21 +27,13 @@ public class VerificationToken {
         super();
     }
 
-    public VerificationToken(final String token) {
-        super();
-
-        this.token = token;
-        this.expiryDate = calculateExpiryDate(EXPIRATION);
-    }
-
     public VerificationToken(final String token, final User user) {
         super();
         Calendar calendar = Calendar.getInstance();
-
         this.token = token;
         this.user = user;
         this.createdDate = new Date(calendar.getTime().getTime());
-        this.expiryDate = calculateExpiryDate(EXPIRATION);
+        this.expiryDate = calculateExpiryDate(7*EXPIRATION);
     }
 
     private Date calculateExpiryDate(int expiryTimeInMinutes) {
