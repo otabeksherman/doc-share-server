@@ -9,6 +9,7 @@ import docSharing.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLDataException;
+import java.util.Calendar;
 import java.util.UUID;
 
 @Service
@@ -32,6 +33,20 @@ public class UserService {
         tokenRepository.save(newUserToken);
         new RegistrationEmailListener().confirmRegistration(new OnRegistrationSuccessEvent(user),token);
         return userRepository.save(user);
+    }
+    public String confirmRegistration(String token){
+        VerificationToken verificationToken = tokenRepository.findByToken(token);
+        if(verificationToken == null) {
+            return "redirect:access-denied.....auth.message.invalidToken";
+        }
+        User user = verificationToken.getUser();
+        Calendar calendar = Calendar.getInstance();
+        if((verificationToken.getExpiryDate().getTime()-calendar.getTime().getTime())<=0) {
+            return "redirect:access-denied.....auth.message.expired";
+        }
+        user.setActivated(true);
+        userRepository.save(user);
+        return "The account has been activated successfully";
     }
 
 }

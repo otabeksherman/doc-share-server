@@ -1,6 +1,7 @@
 package docSharing.controller;
 
 import docSharing.Entities.User;
+import docSharing.Entities.VerificationToken;
 import docSharing.event.OnRegistrationSuccessEvent;
 import docSharing.event.RegistrationEmailListener;
 import docSharing.service.UserService;
@@ -8,7 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.MailSender;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.sql.SQLDataException;
@@ -41,5 +44,11 @@ public class UserController {
     @RequestMapping(value="/delete/{id}")
     public ResponseEntity<?> deleteUserById(@PathVariable("id") int id){
         return ResponseEntity.noContent().build();
+    }
+
+
+    @RequestMapping(value="/confirmRegistration",method = RequestMethod.PATCH)
+    public ResponseEntity<String> confirmRegistration(@RequestParam("token") String token) {
+        return new ResponseEntity<>(userService.confirmRegistration(token), HttpStatus.OK);
     }
 }
