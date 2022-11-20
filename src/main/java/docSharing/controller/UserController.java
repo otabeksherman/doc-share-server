@@ -1,10 +1,13 @@
 package docSharing.controller;
 
 import docSharing.Entities.User;
+import docSharing.event.OnRegistrationSuccessEvent;
+import docSharing.event.RegistrationEmailListener;
 import docSharing.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.MailSender;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -21,8 +24,8 @@ public class UserController {
 
     @RequestMapping(method = RequestMethod.POST)
     public ResponseEntity<String> createUser(@RequestBody User user){
+
         try {
-            //user.setActivated(false);
             return new ResponseEntity<>(userService.addUser(user).toString(), HttpStatus.OK);
         } catch (SQLDataException e) {
             throw new ResponseStatusException(
