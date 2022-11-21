@@ -51,4 +51,12 @@ public class AuthenticationService {
         } while (loginTokens.containsKey(tokenString));
         return tokenString;
     }
+
+    public Long isLoggedIn(String token) {
+        if (loginTokens.containsKey(token)) {
+            return loginTokens.get(token).getId();
+        } else {
+            throw new IllegalStateException("Not logged in");
+        }
+    }
 }

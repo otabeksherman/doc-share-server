@@ -1,5 +1,6 @@
 package docSharing.service;
 
+import docSharing.Entities.Document;
 import docSharing.Entities.User;
 import docSharing.Entities.VerificationToken;
 import docSharing.event.RegistrationEmailListener;
@@ -9,8 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLDataException;
-import java.util.Calendar;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class UserService {
@@ -49,6 +49,15 @@ public class UserService {
         user.setActivated(true);
         userRepository.save(user);
         return "The account has been activated successfully";
+    }
+
+    public Set<Document> getAllDocuments(Long id) throws ClassNotFoundException {
+        Optional<User> user = userRepository.findById(id);
+        if (user.isPresent()) {
+            return user.get().getAllDocuments();
+        } else {
+            throw new ClassNotFoundException("User not found");
+        }
     }
 
 }

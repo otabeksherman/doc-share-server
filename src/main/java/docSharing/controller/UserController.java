@@ -1,6 +1,8 @@
 package docSharing.controller;
 
+import docSharing.Entities.Document;
 import docSharing.Entities.User;
+import docSharing.service.AuthenticationService;
 import docSharing.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -9,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.sql.SQLDataException;
+import java.util.Set;
 
 @RestController
 @CrossOrigin
@@ -18,10 +21,11 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired AuthenticationService authenticationService;
+
 
     @RequestMapping(method = RequestMethod.POST)
     public ResponseEntity<String> createUser(@RequestBody User user){
-
         try {
             return new ResponseEntity<>(userService.addUser(user).toString(), HttpStatus.OK);
         } catch (SQLDataException e) {
@@ -44,5 +48,17 @@ public class UserController {
     @RequestMapping(value="/confirmRegistration",method = RequestMethod.PATCH)
     public ResponseEntity<String> confirmRegistration(@RequestParam("token") String token) {
         return new ResponseEntity<>(userService.confirmRegistration(token), HttpStatus.OK);
+    }
+
+    @GetMapping("documents")
+    public ResponseEntity<Set<Document>> getAllDocuments(@RequestParam String token) {
+        try {
+            Long userId = authenticationService.isLoggedIn(token);
+            return ResponseEntity.ok(this.userService.getAllDocuments(userId));
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
+        } catch (ClassNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+        }
     }
 }
