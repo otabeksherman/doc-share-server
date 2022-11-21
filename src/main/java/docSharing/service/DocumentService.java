@@ -31,7 +31,8 @@ public class DocumentService {
         }
     }
 
-    public void updateContent(Long docId, Long userId, String content) {
+    public void updateContent(Long docId, Long userId, String content) throws
+            IllegalAccessException, IllegalArgumentException {
         Optional<User> user = userRepository.findById(userId);
         if (user.isPresent()) {
             Optional<Document> document = documentRepository.findById(docId);
@@ -40,16 +41,16 @@ public class DocumentService {
                     document.get().setBody(content);
                     documentRepository.save(document.get());
                 } else {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    throw new IllegalAccessException(
                             String.format("User with ID: \'%d\' doesn't have " +
                                     "Editor permissions in document with ID:\' %d\'", userId, docId));
                 }
             } else {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                throw new IllegalArgumentException(
                         String.format("Document with ID: \'%d\' not found", docId));
             }
         } else {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+            throw new IllegalArgumentException(
                     String.format("User with ID: \'%d\' not found", userId));
         }
     }
