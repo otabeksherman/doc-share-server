@@ -21,6 +21,7 @@ public class UserController {
 
     @RequestMapping(method = RequestMethod.POST)
     public ResponseEntity<String> createUser(@RequestBody User user){
+
         try {
             return new ResponseEntity<>(userService.addUser(user).toString(), HttpStatus.OK);
         } catch (SQLDataException e) {
@@ -30,7 +31,6 @@ public class UserController {
     }
 
     @RequestMapping(method = RequestMethod.GET)
-
     public ResponseEntity<User> getUserById(@RequestParam int id){
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
@@ -38,5 +38,11 @@ public class UserController {
     @RequestMapping(value="/delete/{id}")
     public ResponseEntity<?> deleteUserById(@PathVariable("id") int id){
         return ResponseEntity.noContent().build();
+    }
+
+
+    @RequestMapping(value="/confirmRegistration",method = RequestMethod.PATCH)
+    public ResponseEntity<String> confirmRegistration(@RequestParam("token") String token) {
+        return new ResponseEntity<>(userService.confirmRegistration(token), HttpStatus.OK);
     }
 }
