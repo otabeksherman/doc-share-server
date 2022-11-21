@@ -1,62 +1,80 @@
 package docSharing.controller;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Controller
 public class DocumentController {
+    private UpdateMessage currentState = new UpdateMessage();
+    Runnable updateDocumentBody = new Runnable() {
+        public void run() {
+            System.out.println(currentState);
+        }
+    };
+    public DocumentController(){
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+        executor.scheduleAtFixedRate(updateDocumentBody, 0, 5, TimeUnit.SECONDS);
+    }
     @MessageMapping("/join")
     public void sendPlainMessage(JoinMessage message) {
         System.out.println(message.user + " joined");
     }
 
-
-    @MessageMapping("/update")
-    @SendTo("/topic/updates")
-    public UpdateMessage sendPlainMessage(UpdateMessage message) {
-        return message;
+    @RequestMapping("/document/update")
+    public ResponseEntity<String> sendPlainMessage(@RequestBody UpdateMessage message){
+        currentState = message;
+        return new ResponseEntity<>("message updated", HttpStatus.OK);
     }
 
     static class UpdateMessage {
-        private String user;
-        private UpdateType type;
+        private int userId;
         private String content;
-        private int position;
+
+        private int documentId;
 
         public UpdateMessage() {
         }
 
-        public String getUser() {
-            return user;
-        }
-
-        public void setUser(String user) {
-            this.user = user;
-        }
-
-        public UpdateType getType() {
-            return type;
-        }
-
-        public void setType(UpdateType type) {
-            this.type = type;
+        public int getUserId() {
+            return userId;
         }
 
         public String getContent() {
             return content;
         }
 
+        public int getDocumentId() {
+            return documentId;
+        }
+
+        public void setUserId(int userId) {
+            this.userId = userId;
+        }
+
         public void setContent(String content) {
             this.content = content;
         }
 
-        public int getPosition() {
-            return position;
+        public void setDocumentId(int documentId) {
+            this.documentId = documentId;
         }
 
-        public void setPosition(int position) {
-            this.position = position;
+        @Override
+        public String toString() {
+            return "UpdateMessage{" +
+                    "userId=" + userId +
+                    ", content='" + content + '\'' +
+                    ", documentId=" + documentId +
+                    '}';
         }
     }
 
