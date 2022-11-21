@@ -51,12 +51,12 @@ public class UserService {
         return "The account has been activated successfully";
     }
 
-    public Set<Document> getAllDocuments(Long id) throws ClassNotFoundException {
+    public Set<Document> getAllDocuments(Long id) throws IllegalArgumentException {
         Optional<User> user = userRepository.findById(id);
         if (user.isPresent()) {
             return user.get().getAllDocuments();
         } else {
-            throw new ClassNotFoundException("User not found");
+            throw new IllegalArgumentException("User not found");
         }
     }
 

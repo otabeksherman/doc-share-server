@@ -5,8 +5,10 @@ import docSharing.Entities.User;
 import docSharing.service.AuthenticationService;
 import docSharing.utils.ParametersValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -23,13 +25,19 @@ public class AuthenticationController {
     public ResponseEntity<String> login(@RequestBody LoginRequest request) {
         if (request == null || request.getEmail() == null
                 || request.getPassword() == null) {
-            return ResponseEntity.badRequest().body(BAD_REQUEST.toString());
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "Incorrect email or password format");
         } else {
             if (ParametersValidator.isCorrectEmail(request.getEmail())
                     && ParametersValidator.isCorrectPassword(request.getPassword())) {
-                return ResponseEntity.ok(authenticationService.login(request));
+               try {
+                   return ResponseEntity.ok(authenticationService.login(request));
+               } catch (IllegalArgumentException e) {
+                   throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+               }
             } else {
-                return ResponseEntity.badRequest().body(BAD_REQUEST.toString());
+                throw new ResponseStatusException(BAD_REQUEST,
+                        "Incorrect email or password format");
             }
         }
     }

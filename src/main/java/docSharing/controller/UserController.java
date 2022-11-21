@@ -57,7 +57,7 @@ public class UserController {
             return ResponseEntity.ok(this.userService.getAllDocuments(userId));
         } catch (IllegalStateException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
-        } catch (ClassNotFoundException e) {
+        } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
         }
     }
