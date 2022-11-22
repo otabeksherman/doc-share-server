@@ -1,5 +1,7 @@
 package docSharing.Entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,6 +32,7 @@ public class Document {
     @JoinTable(name = "document_viewers",
         joinColumns = { @JoinColumn(name = "document_id") },
         inverseJoinColumns = { @JoinColumn(name = "user_id") })
+    @JsonIgnore
     private Set<User> viewers = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.EAGER,
@@ -40,6 +43,7 @@ public class Document {
     @JoinTable(name = "document_editors",
         joinColumns = { @JoinColumn(name = "document_id") },
         inverseJoinColumns = { @JoinColumn(name = "user_id") })
+    @JsonIgnore
     private Set<User> editors = new HashSet<>();
 
     public Document() {}

@@ -33,7 +33,7 @@ public class AuthenticationService {
                 return token;
             }
         } else {
-            return "User doesn't exist";
+            throw new IllegalArgumentException();
         }
     }
 
