@@ -56,17 +56,17 @@ public class DocumentService {
     }
 
     public Document getDocumentById(Long docId, Long userId) {
-        Optional<Document> OptDoc = documentRepository.findById(docId);
-        Optional<User> OptUser = userRepository.findById(userId);
-        if (!OptUser.isPresent()) {
+        Optional<Document> optDoc = documentRepository.findById(docId);
+        Optional<User> optUser = userRepository.findById(userId);
+        if (!optUser.isPresent()) {
             throw new IllegalArgumentException(String.format("User with ID: '%d' not found", userId));
         }
-        if (!OptDoc.isPresent()) {
+        if (!optDoc.isPresent()) {
             throw new IllegalArgumentException(String.format("Document with ID: '%d' not found", userId));
         }
 
-        Document doc = OptDoc.get();
-        User user = OptUser.get();
+        Document doc = optDoc.get();
+        User user = optUser.get();
 
         if (!doc.getEditors().contains(user) && !doc.getViewers().contains(user)) {
             throw new IllegalArgumentException("User doesn't have access to the document");
