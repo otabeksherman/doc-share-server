@@ -9,8 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class DocumentService {
@@ -53,5 +53,34 @@ public class DocumentService {
             throw new IllegalArgumentException(
                     String.format("User with ID: \'%d\' not found", userId));
         }
+    }
+
+    public Document getDocumentById(Long docId, Long userId) {
+        Optional<Document> OptDoc = documentRepository.findById(docId);
+        Optional<User> OptUser = userRepository.findById(userId);
+        if (!OptUser.isPresent()) {
+            throw new IllegalArgumentException(String.format("User with ID: '%d' not found", userId));
+        }
+        if (!OptDoc.isPresent()) {
+            throw new IllegalArgumentException(String.format("Document with ID: '%d' not found", userId));
+        }
+
+        Document doc = OptDoc.get();
+        User user = OptUser.get();
+
+        if (!doc.getEditors().contains(user) && !doc.getViewers().contains(user)) {
+            throw new IllegalArgumentException("User doesn't have access to the document");
+        }
+
+        return doc;
+    }
+
+    public Set<Document> getAllDocuments(Long id) throws IllegalArgumentException {
+        Optional<User> user = userRepository.findById(id);
+        if (!user.isPresent()) {
+            throw new IllegalArgumentException(String.format("User with ID: '%d' not found", id));
+        }
+
+        return user.get().getAllDocuments();
     }
 }
