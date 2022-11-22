@@ -26,6 +26,8 @@ public class AuthenticationService {
             if (loginTokens.containsValue(user)) {
                 return "Already logged in";
             } else {
+                if(!user.getActivated())
+                    return "user's account not activated";
                 String token = generateUniqueToken();
                 loginTokens.put(token, user);
                 return token;
