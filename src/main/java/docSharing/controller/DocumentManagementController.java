@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
+@CrossOrigin
 @RequestMapping("api/v1/doc")
 public class DocumentManagementController {
 
@@ -18,10 +19,10 @@ public class DocumentManagementController {
 
     @PostMapping("/create")
     public void createDocument(@RequestParam String title,
-                               @RequestParam String token) {
+                               @RequestParam String token, @RequestParam Long folderId) {
         try {
             Long id = authenticationService.isLoggedIn(token);
-            documentService.createDocument(id, title);
+            documentService.createDocument(id, title, folderId);
         } catch (IllegalStateException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
         }

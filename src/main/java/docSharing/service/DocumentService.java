@@ -1,8 +1,10 @@
 package docSharing.service;
 
 import docSharing.Entities.Document;
+import docSharing.Entities.Folder;
 import docSharing.Entities.User;
 import docSharing.repository.DocumentRepository;
+import docSharing.repository.FolderRepository;
 import docSharing.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,14 +23,21 @@ public class DocumentService {
     @Autowired
     private UserRepository userRepository;
 
-    public void createDocument(Long userId, String title) {
+    @Autowired
+    private FolderRepository folderRepository;
+
+    public void createDocument(Long userId, String title, Long folderId) {
         Optional<User> user = userRepository.findById(userId);
-        if (user.isPresent()) {
-            documentRepository.save(new Document(user.get(), title));
-        } else {
+        if (!user.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("User with ID: \'%d\' doesn't exist", userId));
         }
+        Optional<Folder> folder = folderRepository.findById(folderId);
+        if (!folder.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.format("Folder with ID: \'%d\' doesn't exist", folderId));
+        }
+        documentRepository.save(new Document(user.get(), title, folder.get()));
     }
 
     public void updateContent(Long docId, Long userId, String content) throws

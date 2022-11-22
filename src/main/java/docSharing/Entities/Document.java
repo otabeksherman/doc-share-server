@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.persistence.*;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -46,13 +47,26 @@ public class Document {
     @JsonIgnore
     private Set<User> editors = new HashSet<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
+    private Folder folder;
+
     public Document() {}
 
-    public Document(User user, String title) {
+    public Document(User user, String title, Folder folder) {
         this.title = title;
         this.owner = user;
         this.viewers.add(user);
         this.editors.add(user);
+        this.folder = folder;
+    }
+
+    public Folder getFolder() {
+        return folder;
+    }
+
+    public void setFolder(Folder folder) {
+        this.folder = folder;
     }
 
     public void addViewer(User user) {
@@ -96,5 +110,18 @@ public class Document {
 
     public Long getId() {
         return id;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Document document = (Document) o;
+        return Objects.equals(id, document.id) && Objects.equals(title, document.title) && Objects.equals(owner, document.owner) && Objects.equals(body, document.body) && Objects.equals(viewers, document.viewers) && Objects.equals(editors, document.editors) && Objects.equals(folder, document.folder);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, title, owner, body, viewers, editors, folder);
     }
 }
