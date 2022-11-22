@@ -1,5 +1,7 @@
 package docSharing.controller;
 
+import docSharing.service.DocumentService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -8,21 +10,30 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Controller
 public class DocumentController {
-    private UpdateMessage currentState = new UpdateMessage();
+    @Autowired
+    private DocumentService documentService;
+    private Map<Long,UpdateMessage> currentState;
     Runnable updateDocumentBody = new Runnable() {
         public void run() {
-            System.out.println(currentState);
+            if(currentState!=null)
+                for (UpdateMessage message:
+                     currentState.values()) {
+                     documentService.updateContent(message.documentId,message.userId,message.content);
+                }
         }
     };
     public DocumentController(){
+        currentState = new HashMap<>();
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        executor.scheduleAtFixedRate(updateDocumentBody, 0, 5, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(updateDocumentBody, 0, 15, TimeUnit.SECONDS);
     }
     @MessageMapping("/join")
     public void sendPlainMessage(JoinMessage message) {
@@ -31,20 +42,22 @@ public class DocumentController {
 
     @RequestMapping("/document/update")
     public ResponseEntity<String> sendPlainMessage(@RequestBody UpdateMessage message){
-        currentState = message;
+        if(currentState.get(message.documentId)!=null)
+            currentState.replace(message.documentId, message);
+        else
+            currentState.put(message.documentId, message);
         return new ResponseEntity<>("message updated", HttpStatus.OK);
     }
 
     static class UpdateMessage {
-        private int userId;
+        private Long userId;
         private String content;
-
-        private int documentId;
+        private Long documentId;
 
         public UpdateMessage() {
         }
 
-        public int getUserId() {
+        public Long getUserId() {
             return userId;
         }
 
@@ -52,11 +65,11 @@ public class DocumentController {
             return content;
         }
 
-        public int getDocumentId() {
+        public Long getDocumentId() {
             return documentId;
         }
 
-        public void setUserId(int userId) {
+        public void setUserId(Long userId) {
             this.userId = userId;
         }
 
@@ -64,7 +77,7 @@ public class DocumentController {
             this.content = content;
         }
 
-        public void setDocumentId(int documentId) {
+        public void setDocumentId(Long documentId) {
             this.documentId = documentId;
         }
 
