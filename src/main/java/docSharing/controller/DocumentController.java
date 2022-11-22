@@ -26,7 +26,11 @@ public class DocumentController {
             if(currentState!=null)
                 for (UpdateMessage message:
                      currentState.values()) {
-                     documentService.updateContent(message.documentId,message.userId,message.content);
+                    try {
+                        documentService.updateContent(message.documentId,message.userId,message.content);
+                    } catch (IllegalAccessException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
         }
     };
@@ -39,7 +43,6 @@ public class DocumentController {
     public void sendPlainMessage(JoinMessage message) {
         System.out.println(message.user + " joined");
     }
-
     @RequestMapping("/document/update")
     public ResponseEntity<String> sendPlainMessage(@RequestBody UpdateMessage message){
         if(currentState.get(message.documentId)!=null)
@@ -53,7 +56,8 @@ public class DocumentController {
         private Long userId;
         private String content;
         private Long documentId;
-
+        private UpdateType type;
+        private int position;
         public UpdateMessage() {
         }
 
@@ -80,7 +84,20 @@ public class DocumentController {
         public void setDocumentId(Long documentId) {
             this.documentId = documentId;
         }
+        public UpdateType getType() {
+            return type;
+        }
+        public void setType(UpdateType type) {
+            this.type = type;
+        }
 
+        public int getPosition() {
+            return position;
+        }
+
+        public void setPosition(int position) {
+            this.position = position;
+        }
         @Override
         public String toString() {
             return "UpdateMessage{" +
