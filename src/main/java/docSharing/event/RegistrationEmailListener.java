@@ -36,7 +36,7 @@ public class RegistrationEmailListener{
             emailMessage.setFrom(new InternetAddress(from));
             emailMessage.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
             emailMessage.setSubject(subject);
-            emailMessage.setText(message + " \nhttp://localhost:8081" + url);
+            emailMessage.setText(message + " \nhttp://"+env.getProperty("host")+":"+env.getProperty("server.port") + url);
             Transport.send(emailMessage);
             System.out.println("message sent successfully....");
         } catch (MessagingException mex) {
