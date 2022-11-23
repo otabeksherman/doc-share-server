@@ -21,9 +21,6 @@ public class FolderController {
     private FolderService folderService;
 
     @Autowired
-    private UserService userService;
-
-    @Autowired
     private AuthenticationService authenticationService;
 
     @GetMapping

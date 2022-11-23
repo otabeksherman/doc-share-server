@@ -24,6 +24,9 @@ public class FolderService {
         Optional<Folder> mainFolder = folderRepository.findByOwnerIdAndParentFolderIsNull(userId);
         if (!mainFolder.isPresent()) {
             Optional<User> byId = userRepository.findById(userId);
+            if (!byId.isPresent()) {
+                return null;
+            }
             Folder folder = new Folder(byId.get());
             folderRepository.save(folder);
             return folder;
@@ -44,8 +47,7 @@ public class FolderService {
     }
 
     public Set<Folder> getSubFolders(Long userId, Long folderId) {
-        Set<Folder> folders = folderRepository.findByParentFolderIdAndOwnerId(folderId, userId);
-        return folders;
+        return folderRepository.findByParentFolderIdAndOwnerId(folderId, userId);
     }
 
     public void createFolder(Long userId, String name, Long parentId) {
