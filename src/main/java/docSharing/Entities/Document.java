@@ -47,7 +47,7 @@ public class Document {
     @JsonIgnore
     private Set<User> editors = new HashSet<>();
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JsonIgnore
     private Folder folder;
 
@@ -61,6 +61,7 @@ public class Document {
         this.folder = folder;
     }
 
+    @JsonIgnore
     public Folder getFolder() {
         return folder;
     }

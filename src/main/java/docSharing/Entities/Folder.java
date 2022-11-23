@@ -1,5 +1,6 @@
 package docSharing.Entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -16,6 +17,7 @@ public class Folder {
     private Long id;
 
     @ManyToOne
+    @JsonIgnore
     private User owner;
 
     @Column(nullable = false)
@@ -23,9 +25,11 @@ public class Folder {
 
     @ManyToOne(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name="parent_id")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Folder parentFolder;
 
     @OneToMany(mappedBy = "folder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private Set<Document> innerDocuments;
 
     public Folder() {}
