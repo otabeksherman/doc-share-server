@@ -37,7 +37,10 @@ public class DocumentService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("Folder with ID: \'%d\' doesn't exist", folderId));
         }
-        documentRepository.save(new Document(user.get(), title, folder.get()));
+        Document document = new Document(user.get(), title, folder.get());
+        folder.get().addDocument(document);
+        documentRepository.save(document);
+        folderRepository.save(folder.get());
     }
 
     public void updateContent(Long docId, Long userId, String content) throws

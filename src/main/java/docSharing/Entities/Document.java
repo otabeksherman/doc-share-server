@@ -47,7 +47,8 @@ public class Document {
     @JsonIgnore
     private Set<User> editors = new HashSet<>();
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name="folder_id", referencedColumnName = "id")
     @JsonIgnore
     private Folder folder;
 
@@ -118,11 +119,11 @@ public class Document {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Document document = (Document) o;
-        return Objects.equals(id, document.id) && Objects.equals(title, document.title) && Objects.equals(owner, document.owner) && Objects.equals(body, document.body) && Objects.equals(viewers, document.viewers) && Objects.equals(editors, document.editors) && Objects.equals(folder, document.folder);
+        return Objects.equals(id, document.id) && Objects.equals(title, document.title) && Objects.equals(owner, document.owner) && Objects.equals(body, document.body);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, title, owner, body, viewers, editors, folder);
+        return Objects.hash(id, title, owner, body);
     }
 }

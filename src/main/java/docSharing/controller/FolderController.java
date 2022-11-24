@@ -57,4 +57,15 @@ public class FolderController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
         }
     }
+
+    @DeleteMapping("/{folderId}")
+    public ResponseEntity<Void> deleteFolder(@RequestParam String token, @PathVariable Long folderId) {
+        try {
+            Long id = authenticationService.isLoggedIn(token);
+            folderService.deleteFolder(id, folderId);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
+        }
+    }
 }

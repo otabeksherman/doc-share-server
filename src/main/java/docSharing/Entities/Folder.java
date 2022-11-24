@@ -22,10 +22,14 @@ public class Folder {
     @Column(nullable = false)
     private String name;
 
-    @ManyToOne(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @ManyToOne(fetch = FetchType.EAGER, cascade = {CascadeType.REMOVE, CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name="parent_id")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Folder parentFolder;
+
+    @OneToMany(mappedBy = "parentFolder", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    @JsonIgnore
+    private Set<Folder> innerFolders;
 
     @OneToMany(mappedBy = "folder", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -37,6 +41,7 @@ public class Folder {
         this.owner = owner;
         this.name = "Home";
         this.innerDocuments = new HashSet<>();
+        this.innerFolders = new HashSet<>();
         this.parentFolder = null;
     }
 
@@ -48,6 +53,16 @@ public class Folder {
     public void removeDocument(Document doc) {
         innerDocuments.remove(doc);
         doc.setFolder(null);
+    }
+
+    public Set<Document> removeAllDocuments() {
+        for (Document doc :
+                innerDocuments) {
+            doc.setFolder(null);
+        }
+        Set<Document> docs = innerDocuments;
+        innerDocuments.clear();
+        return docs;
     }
 
     public Long getId() {
@@ -64,6 +79,10 @@ public class Folder {
 
     public Set<Document> getInnerDocuments() {
         return innerDocuments;
+    }
+
+    public Set<Folder> getInnerFolders() {
+        return innerFolders;
     }
 
     public User getOwner() {
