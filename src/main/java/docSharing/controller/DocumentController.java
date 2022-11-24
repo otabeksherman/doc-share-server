@@ -43,13 +43,14 @@ public class DocumentController {
     public void sendPlainMessage(JoinMessage message) {
         System.out.println(message.user + " joined");
     }
-    @RequestMapping("/document/update")
-    public ResponseEntity<String> sendPlainMessage(@RequestBody UpdateMessage message){
+    @MessageMapping("/document/update")
+    @SendTo("topic")
+    public UpdateMessage sendPlainMessage(UpdateMessage message){
         if(currentState.get(message.documentId)!=null)
             currentState.replace(message.documentId, message);
         else
             currentState.put(message.documentId, message);
-        return new ResponseEntity<>("message updated", HttpStatus.OK);
+        return message;
     }
 
     static class UpdateMessage {
