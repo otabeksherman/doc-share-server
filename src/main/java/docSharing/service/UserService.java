@@ -1,6 +1,5 @@
 package docSharing.service;
 
-import docSharing.Entities.Document;
 import docSharing.Entities.User;
 import docSharing.Entities.VerificationToken;
 import docSharing.event.RegistrationEmailListener;
@@ -50,14 +49,4 @@ public class UserService {
         userRepository.save(user);
         return "The account has been activated successfully";
     }
-
-    public Set<Document> getAllDocuments(Long id) throws IllegalArgumentException {
-        Optional<User> user = userRepository.findById(id);
-        if (user.isPresent()) {
-            return user.get().getAllDocuments();
-        } else {
-            throw new IllegalArgumentException("User not found");
-        }
-    }
-
 }
