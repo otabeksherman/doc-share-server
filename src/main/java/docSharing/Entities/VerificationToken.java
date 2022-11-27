@@ -22,6 +22,8 @@ public class VerificationToken {
     private Date createdDate;
     @Column(name = "expiry_date")
     private Date expiryDate;
+    @Column
+    private boolean isActivated;
 
     public VerificationToken() {
         super();
@@ -58,10 +60,6 @@ public class VerificationToken {
         this.createdDate = createdDate;
     }
 
-    public void setExpiryDate(Date expiryDate) {
-        this.expiryDate = expiryDate;
-    }
-
     public int getId() {
         return id;
     }
@@ -80,5 +78,13 @@ public class VerificationToken {
 
     public Date getExpiryDate() {
         return expiryDate;
+    }
+
+    public boolean isActivated() {
+        return isActivated;
+    }
+
+    public void setActivated(boolean activated) {
+        isActivated = activated;
     }
 }
