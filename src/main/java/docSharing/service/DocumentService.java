@@ -183,6 +183,31 @@ public class DocumentService {
         return doc;
     }
 
+    public Set<Document> getAllDocuments(Long id) throws IllegalArgumentException {
+        Optional<User> user = userRepository.findById(id);
+        if (!user.isPresent()) {
+            throw new IllegalArgumentException(String.format("User with ID: '%d' not found", id));
+        }
+
+        return user.get().getAllDocuments();
+    }
+
+    public void shareDocument(Long ownerId, String userEmail, Long docId, Role role) {
+        Optional<Document> document = documentRepository.findById(docId);
+        if (document.isPresent()) {
+            User otherUser = userRepository.findByEmail(userEmail);
+            if (otherUser != null) {
+                if (role == Role.VIEWER) {
+                    document.get().addViewer(otherUser);
+                }
+                if (role == Role.EDITOR) {
+                    document.get().addEditor(otherUser);
+                }
+                documentRepository.save(document.get());
+            }
+        }
+    }
+
     /**
      * Helper class for managing the changes to a document.
      * runs two threads in the background: 1)managing changes to a document. 2)to save the document to the database.

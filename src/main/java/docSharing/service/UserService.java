@@ -1,8 +1,6 @@
 package docSharing.service;
 
-import docSharing.Entities.Activation;
-import docSharing.Entities.User;
-import docSharing.Entities.VerificationToken;
+import docSharing.Entities.*;
 import docSharing.event.RegistrationEmailListener;
 import docSharing.repository.TokenRepository;
 import docSharing.repository.UserRepository;
@@ -11,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.sql.SQLDataException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {

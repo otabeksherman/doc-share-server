@@ -1,6 +1,9 @@
 package docSharing.controller;
 
 import docSharing.Entities.Document;
+import docSharing.Entities.Role;
+import docSharing.Entities.ShareRequest;
+import docSharing.Entities.User;
 import docSharing.service.AuthenticationService;
 import docSharing.service.DocumentService;
 import org.apache.logging.log4j.LogManager;
@@ -10,6 +13,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 @RestController
 @CrossOrigin
@@ -89,5 +96,31 @@ public class DocumentManagementController {
             LOGGER.debug(String.format("move document request failed - token:%s, document:%d to destination folder:%d - " + e.getMessage(), token, documentId, folderId));
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
         }
+    }
+
+    @GetMapping("allowedUsers")
+    public ResponseEntity<Map<String, Set<User>>> getAllowedUsers(@RequestParam String token,
+                                                          @RequestParam Long docId) {
+        Map<String, Set<User>> res = new HashMap<>();
+        try {
+            Long userId = authenticationService.isLoggedIn(token);
+            Document document = documentService.getDocumentById(docId, userId);
+            Set<User> viewers = document.getViewers();
+            Set<User> editors = document.getEditors();
+            res.put("viewers", viewers);
+            res.put("editors", editors);
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
+        }
+
+        return new ResponseEntity<>(res, HttpStatus.OK);
+    }
+
+    @PatchMapping("share")
+    public ResponseEntity<Void> shareDocument(@RequestBody ShareRequest request) {
+        Long userId = authenticationService.isLoggedIn(request.getToken());
+        documentService.shareDocument(userId, request.getEmail(),
+                request.getDocumentId(), request.getRole());
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }
