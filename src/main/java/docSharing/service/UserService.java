@@ -1,5 +1,6 @@
 package docSharing.service;
 
+import docSharing.Entities.Activation;
 import docSharing.Entities.User;
 import docSharing.Entities.VerificationToken;
 import docSharing.event.RegistrationEmailListener;
@@ -9,8 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLDataException;
-import java.util.Calendar;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class UserService {
@@ -36,19 +36,52 @@ public class UserService {
         emailListener.confirmRegistration(user,token);
         return userRepository.save(user);
     }
-    public String confirmRegistration(String token){
-        VerificationToken verificationToken = tokenRepository.findByToken(token);
-        if(verificationToken == null) {
-            return "redirect:access-denied.....auth.message.invalidToken";
+
+    public String confirmRegistration(Activation activation){
+        if (isInvalid(activation)) {
+            throw new RuntimeException("redirect:access-denied.....auth.message.invalidToken");
         }
-        User user = verificationToken.getUser();
-        Calendar calendar = Calendar.getInstance();
-        if((verificationToken.getExpiryDate().getTime()-calendar.getTime().getTime())<=0) {
-            return "redirect:access-denied.....auth.message.expired";
+        if (isExpired(activation)) {
+            throw new RuntimeException("redirect:access-denied.....auth.message.expired");
         }
+        User user = userRepository.findByEmail(activation.getEmail());
+        VerificationToken token = tokenRepository.findByToken(activation.getToken());
         user.setActivated(true);
+        token.setActivated(true);
         userRepository.save(user);
+        tokenRepository.save(token);
         return "The account has been activated successfully";
     }
 
+    private boolean isInvalid(Activation activation) {
+        VerificationToken token = tokenRepository.findByToken(activation.getToken());
+        if(token == null) {
+            return true;
+        } else {
+            User user = userRepository.findByEmail(activation.getEmail());
+            if (!token.getUser().getId().equals(user.getId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isExpired(Activation activation) {
+        VerificationToken token = tokenRepository.findByToken(activation.getToken());
+        Calendar calendar = Calendar.getInstance();
+        if(token.getExpiryDate().before(calendar.getTime())) {
+            return true;
+        }
+        return false;
+    }
+
+    public boolean isActivated(Activation activation) {
+        VerificationToken token = tokenRepository
+                .findByToken(activation.getToken());
+        if (token != null) {
+            return token.isActivated();
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
 }

@@ -1,6 +1,8 @@
 package docSharing.controller;
 
+import docSharing.Entities.Activation;
 import docSharing.Entities.User;
+import docSharing.service.AuthenticationService;
 import docSharing.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,10 +20,12 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    AuthenticationService authenticationService;
+
 
     @RequestMapping(method = RequestMethod.POST)
     public ResponseEntity<String> createUser(@RequestBody User user){
-
         try {
             return new ResponseEntity<>(userService.addUser(user).toString(), HttpStatus.OK);
         } catch (SQLDataException e) {
@@ -40,9 +44,21 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-
-    @RequestMapping(value="/confirmRegistration",method = RequestMethod.PATCH)
-    public ResponseEntity<String> confirmRegistration(@RequestParam("token") String token) {
-        return new ResponseEntity<>(userService.confirmRegistration(token), HttpStatus.OK);
+    @PatchMapping("confirmRegistration")
+    public ResponseEntity<String> confirmRegistration(@RequestBody Activation activation) {
+        if (activation.getEmail() == null || activation.getToken() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid activation parameters");
+        }
+        try {
+            if (userService.isActivated(activation)) {
+                return new ResponseEntity<>("Already activated", HttpStatus.UNAUTHORIZED);
+            } else {
+                return new ResponseEntity<>(userService.confirmRegistration(activation), HttpStatus.OK);
+            }
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Token not found.");
+        } catch (RuntimeException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.toString());
+        }
     }
 }

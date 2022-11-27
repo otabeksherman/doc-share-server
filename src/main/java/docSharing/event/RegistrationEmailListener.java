@@ -2,28 +2,42 @@ package docSharing.event;
 
 import docSharing.Entities.User;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Component;
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.util.Properties;
 
-
 @Configuration
 @PropertySource("classpath:application.properties")
-public class RegistrationEmailListener{
+public class RegistrationEmailListener {
+
     @Autowired
     private Environment env;
+
     public void confirmRegistration(User user,String token) {
+        String messagePartOne = "Dear customer,\n" +
+                "\n" +
+                "Thank you for joining the Shared Documents Application! We provide an excellent platform for " +
+                "creating, editing, sharing, and viewing documents. \n" +
+                "\n" +
+                "To begin to enjoy our awesome application, we would like to ask you to activate your account by " +
+                "clicking the following activation link:";
+
+        String messagePartTwo = "If clicking the link does not work, please copy-and-paste or re-type it into your " +
+                "browser's address bar and hit \"Enter\".\n" +
+                "\n" +
+                "Thank you,\n" +
+                "\n" +
+                "Shared Documents Team\n" +
+                "\n" +
+                "shared-documents.com";
         String to = user.getEmail();
         String from = env.getProperty("email");
-        String subject = "Registration Confirmation";
-        String url = "/user/confirmRegistration?token=" + token;
-        String message = "Thank you for registering. Please click on the below link to activate your account.";
+        String subject = "Please confirm your new account";
+        String params = String.format("?email=%s&token=%s", to, token);
         Properties props = getMailProperties();
         Session session = Session.getInstance(props, new javax.mail.Authenticator() {
             protected PasswordAuthentication getPasswordAuthentication() {
@@ -36,13 +50,17 @@ public class RegistrationEmailListener{
             emailMessage.setFrom(new InternetAddress(from));
             emailMessage.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
             emailMessage.setSubject(subject);
-            emailMessage.setText(message + " \nhttp://localhost:8081" + url);
+            emailMessage.setText(messagePartOne + " \nhttp://"
+                    + env.getProperty("client") + ":"
+                    + env.getProperty("client.port") + "/"
+                    + env.getProperty("page.activation")
+                    + params + "\n" + messagePartTwo);
             Transport.send(emailMessage);
-            System.out.println("message sent successfully....");
         } catch (MessagingException mex) {
             mex.printStackTrace();
         }
     }
+
     private Properties getMailProperties(){
         Properties pros = new Properties();
         pros.put("mail.smtp.auth", true);

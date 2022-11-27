@@ -26,12 +26,14 @@ public class AuthenticationService {
             if (loginTokens.containsValue(user)) {
                 return "Already logged in";
             } else {
+                if(!user.getActivated())
+                    return "user's account not activated";
                 String token = generateUniqueToken();
                 loginTokens.put(token, user);
                 return token;
             }
         } else {
-            return "User doesn't exist";
+            throw new IllegalArgumentException();
         }
     }
 
@@ -50,5 +52,13 @@ public class AuthenticationService {
             tokenString = sb.toString();
         } while (loginTokens.containsKey(tokenString));
         return tokenString;
+    }
+
+    public Long isLoggedIn(String token) {
+        if (loginTokens.containsKey(token)) {
+            return loginTokens.get(token).getId();
+        } else {
+            throw new IllegalStateException("Not logged in");
+        }
     }
 }
