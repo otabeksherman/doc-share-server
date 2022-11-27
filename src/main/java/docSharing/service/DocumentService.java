@@ -40,6 +40,22 @@ public class DocumentService {
         documentRepository.save(new Document(user.get(), title, folder.get()));
     }
 
+    public void createDocument(Long userId, String title, String body, Long folderId) {
+        Optional<User> user = userRepository.findById(userId);
+        if (!user.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.format("User with ID: '%d' doesn't exist", userId));
+        }
+        Optional<Folder> folder = folderRepository.findById(folderId);
+        if (!folder.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.format("Folder with ID: '%d' doesn't exist", folderId));
+        }
+        Document document = new Document(user.get(), title, folder.get());
+        document.setBody(body);
+        documentRepository.save(document);
+    }
+
     public void updateContent(Long docId, Long userId, String content) throws
             IllegalAccessException, IllegalArgumentException {
         Optional<User> user = userRepository.findById(userId);
