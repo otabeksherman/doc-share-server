@@ -53,4 +53,16 @@ public class DocumentManagementController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
     }
+
+    @PostMapping("/import")
+    public ResponseEntity<Void> importDocument(@RequestParam String title, @RequestParam String token,
+                                               @RequestParam Long folderId, @RequestBody String body) {
+        try {
+            Long id = authenticationService.isLoggedIn(token);
+            documentService.createDocument(id, title, body, folderId);
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
+        }
+        return ResponseEntity.noContent().build();
+    }
 }
