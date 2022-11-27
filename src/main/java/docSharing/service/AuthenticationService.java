@@ -23,11 +23,11 @@ public class AuthenticationService {
     public String login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail());
         if (user != null) {
+            if(!user.getActivated())
+                return "user's account not activated";
             if (loginTokens.containsValue(user)) {
                 return "Already logged in";
             } else {
-                if(!user.getActivated())
-                    return "user's account not activated";
                 String token = generateUniqueToken();
                 loginTokens.put(token, user);
                 return token;

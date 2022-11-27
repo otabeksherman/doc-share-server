@@ -29,12 +29,12 @@ public class UserService {
         if(userRepository.findByEmail(user.getEmail())!=null){
             throw new SQLDataException(String.format("Email %s exists in users table", user.getEmail()));
         }
-        userRepository.save(user);
         String token = UUID.randomUUID().toString();
         VerificationToken newUserToken = new VerificationToken(token, user);
+        userRepository.save(user);
         tokenRepository.save(newUserToken);
         emailListener.confirmRegistration(user,token);
-        return userRepository.save(user);
+        return user;
     }
 
     public String confirmRegistration(Activation activation){
