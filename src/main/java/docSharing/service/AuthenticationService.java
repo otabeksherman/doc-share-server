@@ -91,4 +91,8 @@ public class AuthenticationService {
             throw new IllegalArgumentException("Not logged in");
         }
     }
+    public String logout(String token){
+        loginTokens.remove(token);
+        return "logout user";
+    }
 }
