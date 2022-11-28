@@ -61,4 +61,8 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.toString());
         }
     }
+    @PatchMapping("logout")
+    public ResponseEntity<String> logout(@RequestParam String token) {
+        return new ResponseEntity<>(authenticationService.logout(token),HttpStatus.OK);
+    }
 }
