@@ -1,7 +1,10 @@
 package docSharing.controller;
 
+import docSharing.Entities.Document;
+import docSharing.Entities.User;
 import docSharing.service.AuthenticationService;
 import docSharing.service.DocumentService;
+import docSharing.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,10 +16,12 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -26,11 +31,13 @@ import java.util.concurrent.TimeUnit;
 public class DocumentController {
     @Autowired
     private DocumentService documentService;
-    private Map<Long,UpdateMessage> currentState;
     @Autowired
-    private SimpMessagingTemplate simpMessage;
+    private UserService userService;
+    private Map<Long,UpdateMessage> currentState;
+    private Map<Long, List<String>> documentsViewers;
     @Autowired
     AuthenticationService authenticationService;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DocumentController.class);
     Runnable updateDocumentBody = new Runnable() {
         public void run() {
@@ -48,12 +55,26 @@ public class DocumentController {
     public DocumentController(){
         LOGGER.info("in document controller constructor");
         currentState = new HashMap<>();
+        documentsViewers = new HashMap<>();
         //ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         //executor.scheduleAtFixedRate(updateDocumentBody, 0, 15, TimeUnit.SECONDS);
     }
-    @MessageMapping("/join")
-    public void sendPlainMessage(JoinMessage message) {
-        System.out.println(message.user + " joined");
+    @MessageMapping("/join/")
+    @SendTo("/topic/viewers/")
+    public Map<Long,List<String>> sendPlainMessage(JoinDocument joinUser) {
+        String userEmail=userService.getUserById(authenticationService.isLoggedIn(joinUser.user)).getEmail();
+        List<String> usersEmails = documentsViewers.get(joinUser.docId);
+        if(usersEmails==null){
+            usersEmails = new ArrayList<>();
+            usersEmails.add(userEmail);
+            documentsViewers.put(joinUser.docId,usersEmails);
+        }
+        else{
+            if(!usersEmails.contains(userEmail))
+                usersEmails.add(userEmail);
+        }
+        System.out.println(userEmail + " joined");
+        return documentsViewers;
     }
     @MessageMapping("/update/")
     @SendTo("/topic/updates/")
@@ -62,14 +83,18 @@ public class DocumentController {
             currentState.replace(message.documentId, message);
         else
             currentState.put(message.documentId, message);*/
-
         Long userId = authenticationService.isLoggedIn(message.user);
         documentService.updateContent(message.documentId,userId,message.content);
-        //simpMessage.convertAndSend("/topic/updates/" + message.documentId, message);
-
         return message;
     }
-
+    @GetMapping("/viewers/")
+    public ResponseEntity<Map<Long, List<String>>> getDocumentById() {
+        try {
+            return new ResponseEntity<>(documentsViewers, HttpStatus.OK);
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no viewers");
+        }
+    }
     static class UpdateMessage {
         private String user;
         private String content;
@@ -134,10 +159,17 @@ public class DocumentController {
         APPEND_RANGE
     }
 
-    private class JoinMessage {
+    static class JoinDocument {
         private String user;
+        private Long docId;
+        public JoinDocument() {
+        }
+        public void setDocId(Long docId) {
+            this.docId = docId;
+        }
 
-        public JoinMessage() {
+        public Long getDocId() {
+            return docId;
         }
 
         public String getUser() {

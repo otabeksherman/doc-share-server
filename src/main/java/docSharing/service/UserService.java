@@ -84,4 +84,7 @@ public class UserService {
             throw new IllegalArgumentException();
         }
     }
+    public User getUserById(Long id){
+        return userRepository.findById(id).get();
+    }
 }
