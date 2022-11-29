@@ -76,6 +76,7 @@ public class DocumentController {
         System.out.println(userEmail + " joined");
         return documentsViewers;
     }
+
     @MessageMapping("/update/")
     @SendTo("/topic/updates/")
     public UpdateMessage sendPlainMessage(UpdateMessage message) throws IllegalAccessException {
@@ -94,6 +95,14 @@ public class DocumentController {
         } catch (IllegalStateException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no viewers");
         }
+    }
+    @MessageMapping("/deleteViewer/")
+    @SendTo("/topic/viewers/")
+    public Map<Long,List<String>> deleteViewer(Long docId, String token) {
+        String userEmail=userService.getUserById(authenticationService.isLoggedIn(token)).getEmail();
+        documentsViewers.get(docId).remove(userEmail);
+        System.out.println("delete viewer!!");
+        return documentsViewers;
     }
     static class UpdateMessage {
         private String user;
