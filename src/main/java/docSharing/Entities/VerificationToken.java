@@ -23,7 +23,7 @@ public class VerificationToken {
     @Column(name = "expiry_date")
     private Date expiryDate;
     @Column
-    private boolean isActivated;
+    private Boolean isActivated;
 
     public VerificationToken() {
         super();
@@ -81,6 +81,11 @@ public class VerificationToken {
     }
 
     public boolean isActivated() {
+        Calendar calendar = Calendar.getInstance();
+        if(new Date(calendar.getTime().getTime()).after(expiryDate))
+            isActivated = false;
+        else
+            isActivated = true;
         return isActivated;
     }
 

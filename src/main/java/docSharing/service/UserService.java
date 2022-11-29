@@ -26,14 +26,25 @@ public class UserService {
 
 
     public User addUser(User user) throws SQLDataException {
-        if(userRepository.findByEmail(user.getEmail())!=null){
-            throw new SQLDataException(String.format("Email %s exists in users table", user.getEmail()));
+        user = userRepository.findByEmail(user.getEmail());
+        if(user!=null){
+            if(user.getActivated())
+                throw new SQLDataException(String.format("Email %s exists in users table", user.getEmail()));
+            VerificationToken userToken = tokenRepository.findByUser(user);
+            if(userToken==null || !userToken.isActivated()){
+                String token = UUID.randomUUID().toString();
+                userToken = new VerificationToken(token, user);
+                tokenRepository.save(userToken);
+            }
+            emailListener.confirmRegistration(user,userToken.getToken());
         }
-        String token = UUID.randomUUID().toString();
-        VerificationToken newUserToken = new VerificationToken(token, user);
-        userRepository.save(user);
-        tokenRepository.save(newUserToken);
-        emailListener.confirmRegistration(user,token);
+        else {
+            String token = UUID.randomUUID().toString();
+            VerificationToken newUserToken = new VerificationToken(token, user);
+            userRepository.save(user);
+            tokenRepository.save(newUserToken);
+            emailListener.confirmRegistration(user, token);
+        }
         return user;
     }
 
