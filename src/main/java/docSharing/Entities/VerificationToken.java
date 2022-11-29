@@ -38,6 +38,13 @@ public class VerificationToken {
         this.expiryDate = calculateExpiryDate(7*EXPIRATION);
     }
 
+    public VerificationToken(String token, User user, Date expiryDate) {
+        this.token = token;
+        this.user = user;
+        this.createdDate = new Date(Calendar.getInstance().getTime().getTime());
+        this.expiryDate = expiryDate;
+    }
+
     private Date calculateExpiryDate(int expiryTimeInMinutes) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(new Timestamp(calendar.getTime().getTime()));

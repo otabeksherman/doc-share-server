@@ -27,14 +27,15 @@ public class UserService {
 
     public User addUser(User user) throws SQLDataException {
         if(userRepository.findByEmail(user.getEmail())!=null){
-            throw new SQLDataException(String.format("Email %s exists in users table", user.getEmail()));
+            throw new IllegalArgumentException(String.format("Email %s already has an account", user.getEmail()));
         }
         String token = UUID.randomUUID().toString();
-        VerificationToken newUserToken = new VerificationToken(token, user);
-        userRepository.save(user);
+
+        User savedUser = userRepository.save(user);
+        VerificationToken newUserToken = new VerificationToken(token, savedUser);
         tokenRepository.save(newUserToken);
-        emailListener.confirmRegistration(user,token);
-        return user;
+        emailListener.confirmRegistration(savedUser,token);
+        return savedUser;
     }
 
     public String confirmRegistration(Activation activation){
