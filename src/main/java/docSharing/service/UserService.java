@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import java.sql.SQLDataException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -73,7 +72,7 @@ public class UserService {
         if (isExpired(activation)) {
             throw new RuntimeException("redirect:access-denied.....auth.message.expired");
         }
-        User user = userRepository.findByEmail(activation.getUserEmail());
+        User user = userRepository.findByEmail(activation.getEmail());
         VerificationToken token = tokenRepository.findByToken(activation.getToken());
         tokenRepository.deleteById(token.getId());
         user.setActivated(true);
@@ -89,41 +88,34 @@ public class UserService {
      */
     private boolean isInvalid(Activation activation) {
         VerificationToken token = tokenRepository.findByToken(activation.getToken());
-        if(token == null) {
+        User user = userRepository.findByEmail(activation.getEmail());
+        if(token == null || !token.getUser().getId().equals(user.getId())) {
             return true;
         } else {
-            User user = userRepository.findByEmail(activation.getUserEmail());
-            if(!token.getUser().getId().equals(user.getId())) {
-                return true;
-            }
+            return false;
         }
-        return false;
     }
 
     /**
      * check if the activation token is expired
      * @param activation - (userEmail,token)
-     * @return true if the token is not activated, false if it is activated
+     * @return true if the token is expired, false if not expired
      */
     private boolean isExpired(Activation activation) {
         VerificationToken token = tokenRepository.findByToken(activation.getToken());
-        return !token.isActivated();
+        Calendar calendar = Calendar.getInstance();
+        return token.getExpiryDate().before(calendar.getTime());
     }
 
     /**
      * check if user's account is activated
      * @param activation
      * @return true if activated , false if not activated
-     * @throws IllegalArgumentException If the user does not exist
      */
     public boolean isActivated(Activation activation) {
-        User user = userRepository.findByEmail(activation.getUserEmail());
-        if (user == null) {
-            throw new IllegalArgumentException();
-        }
-
-        return user.getActivated();
+        return userRepository.findByEmail(activation.getEmail()).getActivated();
     }
+
     public User getUserById(Long id){
         return userRepository.findById(id).get();
     }

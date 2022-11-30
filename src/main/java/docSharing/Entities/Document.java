@@ -117,9 +117,6 @@ public class Document {
         return id;
     }
 
-    @JsonIgnore
-    public User getOwner() {return owner;}
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
