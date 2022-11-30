@@ -131,8 +131,10 @@ public class DocumentService {
      * if the programs stops abruptly, the most data lost is the last three seconds of the program.
      */
     class DocumentChanger {
-        private Document document;
+        private final Document document;
         private final Queue<UpdateMessage> changesQueue = new ConcurrentLinkedQueue<>();
+
+        private final StringBuffer documentBody;
 
         Thread runnerThread = new Thread(this::runner);
 
@@ -140,12 +142,9 @@ public class DocumentService {
 
         DocumentChanger(Document document) {
             this.document = document;
+            documentBody = new StringBuffer(document.getBody());
             saveExecutor.scheduleAtFixedRate(this::saveDocument, 0, 5, TimeUnit.SECONDS);
             LOGGER.debug(String.format("Finished creating document changer for document:%d", document.getId()));
-        }
-
-        public Document getDocument() {
-            return document;
         }
 
         /**
@@ -172,19 +171,18 @@ public class DocumentService {
         private void runner() {
             while (changesQueue.peek() != null) {
                 UpdateMessage current = changesQueue.peek();
-                String body = document.getBody();
-                if (current.getPosition() > body.length()) {
+                if (current.getPosition() > documentBody.length()) {
                     LOGGER.debug(String.format("resent update message {documentId:%d, type:%s, content:%s}", document.getId(), current.getType(), current.getContent()));
                     changesQueue.add(current);
                     changesQueue.poll();
                     continue;
                 }
-                body = getNewBody(body, current);
-                document.setBody(body);
+                getNewBody(current);
                 changeUpcoming(current);
                 changesQueue.poll();
             }
             LOGGER.debug(String.format("runner of document:%d saving and stopping, finished queue.", document.getId()));
+            document.setBody(documentBody.toString());
             documentRepository.save(document);
         }
 
@@ -197,7 +195,6 @@ public class DocumentService {
                 if (Objects.equals(laterMessage.getUser(), current.getUser()) || laterMessage.getPosition() < current.getPosition()) {
                     continue;
                 }
-
                 switch (current.getType()) {
                     case DELETE:
                     case DELETE_RANGE:
@@ -220,36 +217,30 @@ public class DocumentService {
          */
         private void saveDocument() {
             if (changesQueue.isEmpty()) return;
+            document.setBody(documentBody.toString());
             documentRepository.save(document);
         }
 
         /**
          * This function changes the body in accordance with the current update message.
-         * @param oldBody the body of the document before the change.
          * @param message the update message, regarding how to change the body.
-         * @return the new body after the change.
          * @throws UnsupportedOperationException if the message type is not one of {DELETE, DELETE_RANGE, APPEND, APPEND_RANGE}.
          */
-        private String getNewBody(String oldBody, UpdateMessage message) {
-            String body;
+        private void getNewBody(UpdateMessage message) {
             switch (message.getType()) {
                 case DELETE:
-                    if (oldBody.length() == 0) return "";
-                    body = oldBody.substring(0, message.getPosition()) + oldBody.substring(message.getPosition() + 1);
+                case DELETE_RANGE:
+                    if (documentBody.length() == 0) return;
+                    documentBody.delete(message.getPosition(), message.getPosition() + message.getContent().length());
                     break;
                 case APPEND:
                 case APPEND_RANGE:
-                    body = oldBody.substring(0, message.getPosition()) + message.getContent() + oldBody.substring(message.getPosition());
-                    break;
-                case DELETE_RANGE:
-                    if (oldBody.length() == 0) return "";
-                    body = oldBody.substring(0, message.getPosition()) + oldBody.substring(message.getPosition() + message.getContent().length());
+                    documentBody.insert(message.getPosition(), message.getContent());
                     break;
                 default:
                     LOGGER.warn(String.format("Update types added but not supported. tried:%s", message.getType()));
                     throw new UnsupportedOperationException(String.format("%s not recognized update type", message.getType()));
             }
-            return body;
         }
     }
 }
