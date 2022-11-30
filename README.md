@@ -1,6 +1,6 @@
 # doc-share-server
 
-The application.properties file is located in the src/main/resources directory. The code for sample application.properties file is given below :
+The **application.properties** file is located in the src/main/resources directory. The code for sample application.properties file is given below :
 ```
 spring.jpa.hibernate.ddl-auto=update
 spring.datasource.url=jdbc:mysql://localhost:3306/docs
