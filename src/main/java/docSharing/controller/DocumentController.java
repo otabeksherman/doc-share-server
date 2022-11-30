@@ -1,7 +1,6 @@
 package docSharing.controller;
 
-import docSharing.Entities.Document;
-import docSharing.Entities.User;
+import docSharing.Entities.UpdateMessage;
 import docSharing.service.AuthenticationService;
 import docSharing.service.DocumentService;
 import docSharing.service.UserService;
@@ -10,11 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -23,9 +19,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Controller
 public class DocumentController {
@@ -39,7 +32,7 @@ public class DocumentController {
     AuthenticationService authenticationService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DocumentController.class);
-    Runnable updateDocumentBody = new Runnable() {
+    /*Runnable updateDocumentBody = new Runnable() {
         public void run() {
             if(currentState!=null)
                 for (UpdateMessage message:
@@ -51,7 +44,7 @@ public class DocumentController {
                     }
                 }
         }
-    };
+    };*/
     public DocumentController(){
         LOGGER.info("in document controller constructor");
         currentState = new HashMap<>();
@@ -84,9 +77,9 @@ public class DocumentController {
             currentState.replace(message.documentId, message);
         else
             currentState.put(message.documentId, message);*/
-        Long userId = authenticationService.isLoggedIn(message.user);
-        documentService.updateContent(message.documentId,userId,message.content);
-        return message;
+
+        Long userId = authenticationService.isLoggedIn(message.getUser());
+        return documentService.updateContent(message,userId);
     }
     @GetMapping("/viewers/")
     public ResponseEntity<Map<Long, List<String>>> getDocumentById() {
@@ -104,7 +97,7 @@ public class DocumentController {
         System.out.println("delete viewer!!");
         return documentsViewers;
     }
-    static class UpdateMessage {
+    /*static class UpdateMessage {
         private String user;
         private String content;
         private Long documentId;
@@ -166,7 +159,7 @@ public class DocumentController {
         APPEND,
         DELETE_RANGE,
         APPEND_RANGE
-    }
+    }*/
 
     static class JoinDocument {
         private String user;
