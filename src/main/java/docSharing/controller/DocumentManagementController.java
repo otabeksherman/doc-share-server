@@ -1,6 +1,6 @@
 package docSharing.controller;
 
-import docSharing.Entities.Document;
+import docSharing.Entities.*;
 import docSharing.service.AuthenticationService;
 import docSharing.service.DocumentService;
 import org.apache.logging.log4j.LogManager;
@@ -10,6 +10,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @CrossOrigin
@@ -89,5 +95,47 @@ public class DocumentManagementController {
             LOGGER.debug(String.format("move document request failed - token:%s, document:%d to destination folder:%d - " + e.getMessage(), token, documentId, folderId));
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
         }
+    }
+
+    @GetMapping("allowedUsers")
+    public ResponseEntity<Map<Role, List<UserResponse>>> getAllowedUsers(@RequestParam String token,
+                                                          @RequestParam Long docId) {
+        Map<Role, List<UserResponse>> res = new HashMap<>();
+        try {
+            Long userId = authenticationService.isLoggedIn(token);
+            Document document = documentService.getDocumentById(docId, userId);
+
+            UserResponse owner = new UserResponse(document.getOwner().getName(),
+                    document.getOwner().getEmail());
+            res.put(Role.OWNER, List.of(owner));
+            List<UserResponse> viewers = getUsersAsUserResponse(document.getViewers());
+            res.put(Role.VIEWER, viewers);
+            List<UserResponse> editors = getUsersAsUserResponse(document.getEditors());
+            res.put(Role.EDITOR, editors);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
+        }
+        return new ResponseEntity<>(res, HttpStatus.OK);
+    }
+
+    @PatchMapping("share")
+    public ResponseEntity<Void> shareDocument(@RequestBody ShareRequest request) {
+        try {
+            Long userId = authenticationService.isLoggedIn(request.getToken());
+            if (!authenticationService.doesExistByEmail(request.getEmail())) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User doesn't exist");
+            }
+            documentService.shareDocument(userId, request.getEmail(),
+                    request.getDocumentId(), request.getRole());
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
+        }
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    private List<UserResponse> getUsersAsUserResponse(Set<User> users) {
+        return users.stream()
+                .map(user -> new UserResponse(user.getName(), user.getEmail()))
+                .collect(Collectors.toList());
     }
 }

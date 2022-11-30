@@ -49,8 +49,12 @@ public class UserController {
      */
     @PatchMapping("confirmRegistration")
     public ResponseEntity<String> confirmRegistration(@RequestBody Activation activation) {
-        if (activation.getUserEmail() == null || activation.getToken() == null) {
+        if (activation.getEmail() == null || activation.getToken() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid activation parameters");
+        }
+        if (!authenticationService.doesExistByEmail(activation.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    String.format("User with email \"%s\" doesn't exist", activation.getEmail()));
         }
         try {
             if (userService.isActivated(activation)) {
