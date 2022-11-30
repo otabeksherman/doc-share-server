@@ -43,7 +43,6 @@ public class AuthenticationController {
             LOGGER.debug(String.format("Login request failed - email:%s OR password:%s, incorrect format", request.getEmail(), request.getPassword()));
             throw new ResponseStatusException(BAD_REQUEST, "Incorrect email or password format");
         }
-
         try {
             LOGGER.info(String.format("Login request sent to service - email:%s, password:%s", request.getEmail(), request.getPassword()));
             return ResponseEntity.ok(authenticationService.login(request));
