@@ -1,18 +1,21 @@
 package docSharing.service;
 
-import docSharing.Entities.Document;
-import docSharing.Entities.Folder;
-import docSharing.Entities.User;
+import docSharing.Entities.*;
 import docSharing.repository.DocumentRepository;
 import docSharing.repository.FolderRepository;
 import docSharing.repository.UserRepository;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class DocumentService {
@@ -25,6 +28,10 @@ public class DocumentService {
 
     @Autowired
     private FolderRepository folderRepository;
+
+    private static final Logger LOGGER = LogManager.getLogger(DocumentService.class);
+
+    private static final Map<Long, DocumentChanger> changers = new HashMap<>();
 
     public void createDocument(Long userId, String title, Long folderId) {
         Optional<User> user = userRepository.findById(userId);
@@ -56,28 +63,37 @@ public class DocumentService {
         documentRepository.save(document);
     }
 
-    public void updateContent(Long docId, Long userId, String content) throws
-            IllegalAccessException, IllegalArgumentException {
+    /**
+     * update body of document based on the update message.
+     * @param update the wanted update.
+     * @param userId the user that wants to perform the update.
+     * @return the update message after the update is completed. the update may change during the update process.
+     * @throws IllegalArgumentException if the user id is incorrect, if the document id is incorrect, or if the user doesn't have editing permissions for the document.
+     */
+    public UpdateMessage updateContent(UpdateMessage update, Long userId) {
         Optional<User> user = userRepository.findById(userId);
-        if (user.isPresent()) {
-            Optional<Document> document = documentRepository.findById(docId);
-            if (document.isPresent()) {
-                if (document.get().getEditors().contains(user.get())) {
-                    document.get().setBody(content);
-                    documentRepository.save(document.get());
-                } else {
-                    throw new IllegalAccessException(
-                            String.format("User with ID: \'%d\' doesn't have " +
-                                    "Editor permissions in document with ID:\' %d\'", userId, docId));
-                }
-            } else {
-                throw new IllegalArgumentException(
-                        String.format("Document with ID: \'%d\' not found", docId));
-            }
-        } else {
-            throw new IllegalArgumentException(
-                    String.format("User with ID: \'%d\' not found", userId));
+        if (!user.isPresent()) {
+            LOGGER.debug(String.format("user:%d doesn't exist", userId));
+            throw new IllegalArgumentException(String.format("User with ID: '%d' doesn't exist", userId));
         }
+        Optional<Document> document = documentRepository.findById(update.getDocumentId());
+        if (!document.isPresent()) {
+            LOGGER.debug(String.format("failing to get document:%d - doesn't exist", update.getDocumentId()));
+            throw new IllegalArgumentException(String.format("Document with ID: '%d' doesn't exist", update.getDocumentId()));
+        }
+        if (!document.get().getEditors().contains(user.get())) {
+            LOGGER.debug(String.format("update failed - user:%d - doesn't have write permissions to document:%d", userId,update.getDocumentId()));
+            throw new IllegalArgumentException(
+                    String.format("User with ID: '%d' doesn't have Editor permissions in document with ID:' %d'", userId, update.getDocumentId()));
+        }
+
+        if (changers.get(update.getDocumentId()) == null) {
+            LOGGER.info(String.format("Creating document changer for document:%d", document.get().getId()));
+            changers.put(update.getDocumentId(), new DocumentChanger(document.get()));
+        }
+
+        LOGGER.debug("sent change to document changer of document:%d");
+        return changers.get(update.getDocumentId()).addUpdate(update);
     }
 
     public Document getDocumentById(Long docId, Long userId) {
@@ -107,5 +123,124 @@ public class DocumentService {
         }
 
         return user.get().getAllDocuments();
+    }
+
+    /**
+     * Helper class for managing the changes to a document.
+     * runs two threads in the background: 1)managing changes to a document. 2)to save the document to the database.
+     * if the programs stops abruptly, the most data lost is the last three seconds of the program.
+     */
+    class DocumentChanger {
+        private final Document document;
+        private final Queue<UpdateMessage> changesQueue = new ConcurrentLinkedQueue<>();
+
+        private final StringBuffer documentBody;
+
+        Thread runnerThread = new Thread(this::runner);
+
+        ScheduledExecutorService saveExecutor = Executors.newScheduledThreadPool(1);
+
+        DocumentChanger(Document document) {
+            this.document = document;
+            documentBody = new StringBuffer(document.getBody());
+            saveExecutor.scheduleAtFixedRate(this::saveDocument, 0, 5, TimeUnit.SECONDS);
+            LOGGER.debug(String.format("Finished creating document changer for document:%d", document.getId()));
+        }
+
+        /**
+         * add a message to the queue. this function waits for the update to go through and only then sends it back.
+         * @param message the update message with how to change the body of the document.
+         * @return the update message sent to the function, possibly modified if needed to solve confilcts.
+         */
+        public UpdateMessage addUpdate(UpdateMessage message) {
+            changesQueue.add(message);
+            if (!runnerThread.isAlive()) {
+                LOGGER.info(String.format("Executing runner of document changer for document:%d", document.getId()));
+                runnerThread = new Thread(this::runner);
+                runnerThread.start();
+            }
+            while (changesQueue.contains(message)) {}
+            return message;
+        }
+
+        /**
+         * This function changes the body of the document and changes the following changes,
+         * so that they will appear in the right space in the body.
+         * This function will run until the queue of changes has been gone through.
+         */
+        private void runner() {
+            while (changesQueue.peek() != null) {
+                UpdateMessage current = changesQueue.peek();
+                if (current.getPosition() > documentBody.length()) {
+                    LOGGER.debug(String.format("resent update message {documentId:%d, type:%s, content:%s}", document.getId(), current.getType(), current.getContent()));
+                    changesQueue.add(current);
+                    changesQueue.poll();
+                    continue;
+                }
+                getNewBody(current);
+                changeUpcoming(current);
+                changesQueue.poll();
+            }
+            LOGGER.debug(String.format("runner of document:%d saving and stopping, finished queue.", document.getId()));
+            document.setBody(documentBody.toString());
+            documentRepository.save(document);
+        }
+
+        /**
+         * this function changes the messages upcoming in the queue in order to fit them in with accordance to the current change.
+         * @param current the current message that is being worked on.
+         */
+        private void changeUpcoming(UpdateMessage current) {
+            for (UpdateMessage laterMessage : changesQueue) {
+                if (Objects.equals(laterMessage.getUser(), current.getUser()) || laterMessage.getPosition() < current.getPosition()) {
+                    continue;
+                }
+                switch (current.getType()) {
+                    case DELETE:
+                    case DELETE_RANGE:
+                        laterMessage.setPosition(laterMessage.getPosition() - current.getContent().length());
+                        break;
+                    case APPEND:
+                    case APPEND_RANGE:
+                        laterMessage.setPosition(laterMessage.getPosition() + current.getContent().length());
+                        break;
+                    default:
+                        LOGGER.warn(String.format("Update types added but not supported. tried:%s", current.getType()));
+                        throw new UnsupportedOperationException(String.format("%s not recognized update type", current.getType()));
+                }
+            }
+        }
+
+        /**
+         * Save the document body to the database.
+         * This function will be run every 3 seconds in order to minimize update messages to the db.
+         */
+        private void saveDocument() {
+            if (changesQueue.isEmpty()) return;
+            document.setBody(documentBody.toString());
+            documentRepository.save(document);
+        }
+
+        /**
+         * This function changes the body in accordance with the current update message.
+         * @param message the update message, regarding how to change the body.
+         * @throws UnsupportedOperationException if the message type is not one of {DELETE, DELETE_RANGE, APPEND, APPEND_RANGE}.
+         */
+        private void getNewBody(UpdateMessage message) {
+            switch (message.getType()) {
+                case DELETE:
+                case DELETE_RANGE:
+                    if (documentBody.length() == 0) return;
+                    documentBody.delete(message.getPosition(), message.getPosition() + message.getContent().length());
+                    break;
+                case APPEND:
+                case APPEND_RANGE:
+                    documentBody.insert(message.getPosition(), message.getContent());
+                    break;
+                default:
+                    LOGGER.warn(String.format("Update types added but not supported. tried:%s", message.getType()));
+                    throw new UnsupportedOperationException(String.format("%s not recognized update type", message.getType()));
+            }
+        }
     }
 }
