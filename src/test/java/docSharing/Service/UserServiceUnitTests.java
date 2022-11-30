@@ -1,4 +1,4 @@
-package docSharing;
+package docSharing.Service;
 
 import docSharing.Entities.Activation;
 import docSharing.Entities.Folder;
@@ -36,7 +36,6 @@ public class UserServiceUnitTests {
     RegistrationEmailListener registrationEmailListener;
 
     static User user;
-    static Folder mainFolder;
 
     @BeforeAll
     static void setup() {
@@ -45,19 +44,49 @@ public class UserServiceUnitTests {
         user.setPassword("qwer1234");
         user.setId(5L);
         user.setActivated(true);
-
-        mainFolder = new Folder(user);
     }
 
     @Test
-    void addUser_EmailAlreadyInUse_throwsIllegalArgument() {
+    void addUser_EmailAlreadyInUseAndUserActivated_throwsIllegalArgument() {
+        user.setActivated(true);
         when(userRepository.findByEmail(user.getEmail())).thenReturn(user);
 
         assertThrows(IllegalArgumentException.class, () -> userService.addUser(user));
     }
 
     @Test
-    void addUser_GoodRequest_throwsIllegalArgument() {
+    void addUser_EmailAlreadyInUseAndNoActivationToken_doesNotThrow() {
+        user.setActivated(false);
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(user);
+        when(tokenRepository.findByUser(user)).thenReturn(null);
+
+        assertDoesNotThrow(() -> userService.addUser(user));
+    }
+
+    @Test
+    void addUser_EmailAlreadyInUseAndInactiveToken_doesNotThrow() {
+        user.setActivated(false);
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(user);
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DATE, -1);
+        VerificationToken verificationToken = new VerificationToken("qweASD123zxc", user, cal.getTime());
+        when(tokenRepository.findByUser(user)).thenReturn(verificationToken);
+
+        assertDoesNotThrow(() -> userService.addUser(user));
+    }
+
+    @Test
+    void addUser_EmailAlreadyInUseAndGoodToken_doesNotThrow() {
+        user.setActivated(false);
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(user);
+        VerificationToken verificationToken = new VerificationToken("qweASD123zxc", user);
+        when(tokenRepository.findByUser(user)).thenReturn(verificationToken);
+
+        assertDoesNotThrow(() -> userService.addUser(user));
+    }
+
+    @Test
+    void addUser_EmailAvailable_throwsIllegalArgument() {
         when(userRepository.findByEmail(user.getEmail())).thenReturn(null);
 
         assertDoesNotThrow(() -> userService.addUser(user));
@@ -104,30 +133,18 @@ public class UserServiceUnitTests {
     }
 
     @Test
-    void isActivated_TokenDoesNotExist_throwsIllegalArgument() {
-        when(tokenRepository.findByToken("qweASD123zxc")).thenReturn(null);
+    void isActivated_EmailDoesNotMatchUser_throwsIllegalArgument() {
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(null);
         Activation activation = new Activation(user.getEmail(), "qweASD123zxc");
 
         assertThrows(IllegalArgumentException.class, () -> userService.isActivated(activation));
     }
 
     @Test
-    void isActivated_TokenActivated_throwsIllegalArgument() {
-        VerificationToken verificationToken = new VerificationToken("qweASD123zxc", user);
-        verificationToken.setActivated(true);
-        when(tokenRepository.findByToken("qweASD123zxc")).thenReturn(verificationToken);
+    void isActivated_GoodRequest_throwsIllegalArgument() {
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(user);
         Activation activation = new Activation(user.getEmail(), "qweASD123zxc");
 
-        assertTrue(userService.isActivated(activation));
-    }
-
-    @Test
-    void isActivated_TokenNotActivated_throwsIllegalArgument() {
-        VerificationToken verificationToken = new VerificationToken("qweASD123zxc", user);
-        verificationToken.setActivated(false);
-        when(tokenRepository.findByToken("qweASD123zxc")).thenReturn(verificationToken);
-        Activation activation = new Activation(user.getEmail(), "qweASD123zxc");
-
-        assertFalse(userService.isActivated(activation));
+        assertEquals(user.getActivated(), userService.isActivated(activation));
     }
 }

@@ -1,4 +1,4 @@
-package docSharing;
+package docSharing.Service;
 
 import docSharing.Entities.Folder;
 import docSharing.Entities.User;
@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
@@ -44,6 +45,7 @@ public class FolderServiceUnitTests {
         user.setActivated(true);
 
         mainFolder = new Folder(user);
+        mainFolder.setId(30L);
     }
 
     @Test
@@ -129,5 +131,91 @@ public class FolderServiceUnitTests {
         when(folderRepository.findById(mainFolder.getId())).thenReturn(Optional.of(mainFolder));
 
         assertDoesNotThrow(() -> folderService.createFolder(user.getId(), "fail", mainFolder.getId()));
+    }
+
+    @Test
+    void moveFolder_UserIdIncorrect_throwsIllegalArgument() {
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> folderService.moveFolder(1L, 20L, 30L));
+    }
+
+    @Test
+    void moveFolder_FolderIdIncorrect_throwsIllegalArgument() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(folderRepository.findById(20L)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> folderService.moveFolder(1L, 20L, 30L));
+    }
+
+    @Test
+    void moveFolder_FolderIsInRoot_throwsIllegalArgument() {
+        Folder secondFolder = new Folder(user);
+        secondFolder.setParentFolder(mainFolder);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(folderRepository.findById(20L)).thenReturn(Optional.of(secondFolder));
+
+        assertThrows(IllegalArgumentException.class, () -> folderService.moveFolder(1L, 20L, -1L));
+    }
+
+    @Test
+    void moveFolder_DestinationFolderIsIncorrect_throwsIllegalArgument() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(folderRepository.findById(20L)).thenReturn(Optional.of(mainFolder));
+        when(folderRepository.findById(30L)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> folderService.moveFolder(1L, 20L, 30L));
+    }
+
+    @Test
+    void moveFolder_NotOwnerOfFolder_throwsIllegalArgument() {
+        User secondUser = new User();
+        secondUser.setId(10L);
+        Folder secondFolder = new Folder(secondUser);
+        secondFolder.setParentFolder(mainFolder);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(folderRepository.findById(20L)).thenReturn(Optional.of(secondFolder));
+        when(folderRepository.findById(30L)).thenReturn(Optional.of(mainFolder));
+
+        assertThrows(IllegalArgumentException.class, () -> folderService.moveFolder(1L, 20L, 30L));
+    }
+
+    @Test
+    void moveFolder_NotOwnerOfDestination_throwsIllegalArgument() {
+        User secondUser = new User();
+        secondUser.setId(10L);
+        Folder secondFolder = new Folder(secondUser);
+        secondFolder.setParentFolder(mainFolder);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(folderRepository.findById(20L)).thenReturn(Optional.of(mainFolder));
+        when(folderRepository.findById(30L)).thenReturn(Optional.of(secondFolder));
+
+        assertThrows(IllegalArgumentException.class, () -> folderService.moveFolder(1L, 20L, 30L));
+    }
+
+    @Test
+    void moveFolder_GoodRequest_doesNotThrow() {
+        Folder secondFolder = new Folder(user);
+        secondFolder.setParentFolder(mainFolder);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(folderRepository.findById(20L)).thenReturn(Optional.of(secondFolder));
+        when(folderRepository.findById(30L)).thenReturn(Optional.of(mainFolder));
+
+        assertDoesNotThrow(() -> folderService.moveFolder(1L, 20L, 30L));
+    }
+
+    @Test
+    void moveFolder_MoveToRoot_MovesToCorrectFolder() {
+        Folder secondFolder = new Folder(user);
+        secondFolder.setParentFolder(mainFolder);
+        Folder thirdFolder = new Folder(user);
+        thirdFolder.setParentFolder(secondFolder);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        //if it tries to get the middle folder it fails
+        when(folderRepository.findById(20L)).thenThrow(IllegalArgumentException.class);
+        when(folderRepository.findById(30L)).thenReturn(Optional.of(mainFolder));
+        when(folderRepository.findById(40L)).thenReturn(Optional.of(thirdFolder));
+
+        assertDoesNotThrow(() -> folderService.moveFolder(1L, 40L, -1L));
     }
 }
