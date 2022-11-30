@@ -17,6 +17,11 @@ public class RegistrationEmailListener {
     @Autowired
     private Environment env;
 
+    /**
+     * send activation message to user's email that contains activation link with user's email and activation token
+     * @param user
+     * @param token - activation token
+     */
     public void confirmRegistration(User user,String token) {
         String messagePartOne = "Dear customer,\n" +
                 "\n" +
@@ -61,6 +66,10 @@ public class RegistrationEmailListener {
         }
     }
 
+    /**
+     * set properties for mail
+     * @return Properties
+     */
     private Properties getMailProperties(){
         Properties pros = new Properties();
         pros.put("mail.smtp.auth", true);

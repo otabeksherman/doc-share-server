@@ -23,31 +23,38 @@ public class UserController {
     @Autowired
     AuthenticationService authenticationService;
 
-
+    /**
+     * create a new user and add it to the system
+     * @param user
+     * @return the details of the user (user.toString())
+     * @throws ResponseStatusException if the user already exists
+     */
     @RequestMapping(method = RequestMethod.POST)
-    public ResponseEntity<String> createUser(@RequestBody User user){
+    public ResponseEntity<User> createUser(@RequestBody User user){
         try {
-            return new ResponseEntity<>(userService.addUser(user).toString(), HttpStatus.OK);
-        } catch (SQLDataException e) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Email already exists", e);
+            return new ResponseEntity<>(userService.addUser(user), HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists", e);
         }
     }
 
-    @RequestMapping(method = RequestMethod.GET)
-    public ResponseEntity<User> getUserById(@RequestParam int id){
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
-
-    @RequestMapping(value="/delete/{id}")
-    public ResponseEntity<?> deleteUserById(@PathVariable("id") int id){
-        return ResponseEntity.noContent().build();
-    }
-
+    /**
+     * Confirm registration for user's account
+     * @param activation - has (activation token , user's email)
+     * @return response Entity with an appropriate notice
+     *          bad request - if the token or the email is null (or if any RuntimeException is thrown)
+     *          unauthorized - if the account already activated
+     *          NOT_FOUND - if the token not found
+     *          ok - if the account activated successfully:)
+     */
     @PatchMapping("confirmRegistration")
     public ResponseEntity<String> confirmRegistration(@RequestBody Activation activation) {
         if (activation.getEmail() == null || activation.getToken() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid activation parameters");
+        }
+        if (!authenticationService.doesExistByEmail(activation.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    String.format("User with email \"%s\" doesn't exist", activation.getEmail()));
         }
         try {
             if (userService.isActivated(activation)) {
@@ -57,8 +64,16 @@ public class UserController {
             }
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Token not found.");
-        } catch (RuntimeException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.toString());
         }
+    }
+
+    /**
+     * logout for the account
+     * @param token - user's login token
+     * @return response Entity with an appropriate notice
+     */
+    @PatchMapping("logout")
+    public ResponseEntity<String> logout(@RequestParam String token) {
+        return new ResponseEntity<>(authenticationService.logout(token),HttpStatus.OK);
     }
 }

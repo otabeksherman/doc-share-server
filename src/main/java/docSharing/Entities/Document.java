@@ -20,6 +20,7 @@ public class Document {
 
     @OneToOne(targetEntity = User.class, fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User owner;
 
     @Column(columnDefinition = "TEXT")
@@ -88,6 +89,9 @@ public class Document {
         user.addEditDocument(this);
     }
 
+    public User getOwner() {
+        return this.owner;
+    }
 
     public String getTitle() {
         return title;
@@ -118,11 +122,13 @@ public class Document {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Document document = (Document) o;
-        return Objects.equals(id, document.id) && Objects.equals(title, document.title) && Objects.equals(owner, document.owner) && Objects.equals(body, document.body) && Objects.equals(viewers, document.viewers) && Objects.equals(editors, document.editors) && Objects.equals(folder, document.folder);
+        return Objects.equals(id, document.id) && Objects.equals(title, document.title)
+                && Objects.equals(owner, document.owner) && Objects.equals(body, document.body)
+                && Objects.equals(folder, document.folder);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, title, owner, body, viewers, editors, folder);
+        return Objects.hash(id, title, owner, body, folder);
     }
 }

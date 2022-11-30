@@ -12,7 +12,7 @@ public class VerificationToken {
     private static final int EXPIRATION = 60 * 24;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Long id;
     @Column(name = "token")
     private String token;
     @OneToOne(targetEntity = User.class, fetch = FetchType.EAGER)
@@ -23,12 +23,17 @@ public class VerificationToken {
     @Column(name = "expiry_date")
     private Date expiryDate;
     @Column
-    private boolean isActivated;
+    private Boolean isActivated;
 
     public VerificationToken() {
         super();
     }
 
+    /**
+     * VerificationToken constructor - set the expiryDate after 7 days from today
+     * @param token
+     * @param user
+     */
     public VerificationToken(final String token, final User user) {
         super();
         Calendar calendar = Calendar.getInstance();
@@ -38,13 +43,20 @@ public class VerificationToken {
         this.expiryDate = calculateExpiryDate(7*EXPIRATION);
     }
 
+    public VerificationToken(String token, User user, Date expiryDate) {
+        this.token = token;
+        this.user = user;
+        this.createdDate = new Date(Calendar.getInstance().getTime().getTime());
+        this.expiryDate = expiryDate;
+    }
+
     private Date calculateExpiryDate(int expiryTimeInMinutes) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(new Timestamp(calendar.getTime().getTime()));
         calendar.add(Calendar.MINUTE, expiryTimeInMinutes);
         return new Date(calendar.getTime().getTime());
     }
-    public void setId(int id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -60,7 +72,7 @@ public class VerificationToken {
         this.createdDate = createdDate;
     }
 
-    public int getId() {
+    public Long getId() {
         return id;
     }
 
@@ -80,7 +92,20 @@ public class VerificationToken {
         return expiryDate;
     }
 
+    /**
+     * every time before sending the isActivated the function checks if the expiry date before today
+     *      if yes - return true
+     *      if no - return false
+     * @return isActivated
+     */
     public boolean isActivated() {
+        if(expiryDate!=null && createdDate!=null) {
+            Calendar calendar = Calendar.getInstance();
+            if (new Date(calendar.getTime().getTime()).after(expiryDate))
+                isActivated = false;
+            else
+                isActivated = true;
+        } else {isActivated =true;}
         return isActivated;
     }
 

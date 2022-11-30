@@ -40,6 +40,11 @@ public class Folder {
         this.parentFolder = null;
     }
 
+    //For Testing
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     public void addDocument(Document doc) {
         innerDocuments.add(doc);
         doc.setFolder(this);
