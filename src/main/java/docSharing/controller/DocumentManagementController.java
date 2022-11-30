@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
 import java.util.Set;
 
 @RestController
@@ -21,6 +22,13 @@ public class DocumentManagementController {
     @Autowired
     AuthenticationService authenticationService;
 
+    /**
+     * Create a new document using the data received from the client.
+     * @param title - document's title
+     * @param token - user's token
+     * @param folderId - The folder's id to add the document to.
+     * @throws ResponseStatusException if the user not logged in.
+     */
     @PostMapping("/create")
     public void createDocument(@RequestParam String title,
                                @RequestParam String token, @RequestParam Long folderId) {
@@ -32,6 +40,12 @@ public class DocumentManagementController {
         }
     }
 
+    /**
+     * @param id - for document
+     * @param token - for user
+     * @return document with that id
+     * @throws ResponseStatusException if the user not logged in.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<Document> getDocumentById(@PathVariable Long id, @RequestParam String token) {
         try {
@@ -39,18 +53,6 @@ public class DocumentManagementController {
             return new ResponseEntity<>(documentService.getDocumentById(id, userId), HttpStatus.OK);
         } catch (IllegalStateException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
-        }
-    }
-
-    @GetMapping("/all")
-    public ResponseEntity<Set<Document>> getAllDocuments(@RequestParam String token) {
-        try {
-            Long userId = authenticationService.isLoggedIn(token);
-            return ResponseEntity.ok(documentService.getAllDocuments(userId));
-        } catch (IllegalStateException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
     }
 

@@ -33,6 +33,13 @@ public class DocumentService {
 
     private static final Map<Long, DocumentChanger> changers = new HashMap<>();
 
+    /**
+     * create document based on the received parameters and add it to document's table using documentRepository
+     * @param userId - id of the owner of the document
+     * @param title for the document
+     * @param folderId - folder's id to add the document to it
+     * @throws ResponseStatusException if the user or the folder not exists
+     */
     public void createDocument(Long userId, String title, Long folderId) {
         Optional<User> user = userRepository.findById(userId);
         if (!user.isPresent()) {
@@ -46,7 +53,14 @@ public class DocumentService {
         }
         documentRepository.save(new Document(user.get(), title, folder.get()));
     }
-
+    /**
+     * create document based on the received parameters(including the body of the document) and add it to document's table using documentRepository
+     * @param userId - id of the owner of the document
+     * @param title for the document
+     * @param body - the content of the folder
+     * @param folderId - folder's id to add the document to it
+     * @throws ResponseStatusException if the user or the folder not exists
+     */
     public void createDocument(Long userId, String title, String body, Long folderId) {
         Optional<User> user = userRepository.findById(userId);
         if (!user.isPresent()) {
@@ -96,6 +110,13 @@ public class DocumentService {
         return changers.get(update.getDocumentId()).addUpdate(update);
     }
 
+    /**
+     * get document by id
+     * @param docId
+     * @param userId
+     * @return the relevant document
+     * @throws IllegalArgumentException if the document or the user not exists or if the user haven't permissions for the document
+     */
     public Document getDocumentById(Long docId, Long userId) {
         Optional<Document> optDoc = documentRepository.findById(docId);
         Optional<User> optUser = userRepository.findById(userId);
@@ -105,7 +126,6 @@ public class DocumentService {
         if (!optDoc.isPresent()) {
             throw new IllegalArgumentException(String.format("Document with ID: '%d' not found", userId));
         }
-
         Document doc = optDoc.get();
         User user = optUser.get();
 
@@ -114,15 +134,6 @@ public class DocumentService {
         }
 
         return doc;
-    }
-
-    public Set<Document> getAllDocuments(Long id) throws IllegalArgumentException {
-        Optional<User> user = userRepository.findById(id);
-        if (!user.isPresent()) {
-            throw new IllegalArgumentException(String.format("User with ID: '%d' not found", id));
-        }
-
-        return user.get().getAllDocuments();
     }
 
     /**

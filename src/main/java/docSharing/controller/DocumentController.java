@@ -26,32 +26,26 @@ public class DocumentController {
     private DocumentService documentService;
     @Autowired
     private UserService userService;
-    private Map<Long,UpdateMessage> currentState;
     private Map<Long, List<String>> documentsViewers;
     @Autowired
     AuthenticationService authenticationService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DocumentController.class);
-    /*Runnable updateDocumentBody = new Runnable() {
-        public void run() {
-            if(currentState!=null)
-                for (UpdateMessage message:
-                     currentState.values()) {
-                    try {
-                        documentService.updateContent(message.documentId, 1L,message.content);
-                    } catch (IllegalAccessException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-        }
-    };*/
+
+    /**
+     * Document's constructor to initialize documentsViewers
+     */
     public DocumentController(){
         LOGGER.info("in document controller constructor");
-        currentState = new HashMap<>();
         documentsViewers = new HashMap<>();
-        //ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        //executor.scheduleAtFixedRate(updateDocumentBody, 0, 15, TimeUnit.SECONDS);
     }
+
+    /**
+     * Add user to document's viewers
+     * @param joinUser
+     * @return a Map for all documents and users that viewing it <docId,list<userEmail>>
+     * @throws IllegalArgumentException if the user not logged in
+     */
     @MessageMapping("/join/")
     @SendTo("/topic/viewers/")
     public Map<Long,List<String>> sendPlainMessage(JoinDocument joinUser) {
@@ -66,29 +60,29 @@ public class DocumentController {
             if(!usersEmails.contains(userEmail))
                 usersEmails.add(userEmail);
         }
-        System.out.println(userEmail + " joined");
         return documentsViewers;
     }
 
+    /**
+     * update the document according to the message received by the request from the client
+     * @param message with the updated content
+     * @return the same message
+     * @throws IllegalAccessException if the user not logged in
+     */
     @MessageMapping("/update/")
     @SendTo("/topic/updates/")
     public UpdateMessage sendPlainMessage(UpdateMessage message) throws IllegalAccessException {
-        /*if(currentState.get(message.documentId)!=null)
-            currentState.replace(message.documentId, message);
-        else
-            currentState.put(message.documentId, message);*/
-
         Long userId = authenticationService.isLoggedIn(message.getUser());
         return documentService.updateContent(message,userId);
     }
-    @GetMapping("/viewers/")
-    public ResponseEntity<Map<Long, List<String>>> getDocumentById() {
-        try {
-            return new ResponseEntity<>(documentsViewers, HttpStatus.OK);
-        } catch (IllegalStateException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no viewers");
-        }
-    }
+
+    /**
+     * delete user from document viewers set
+     * @param docId - the id of the document that the user stop viewing it
+     * @param token - user's token
+     * @return a Map for all documents and users that viewing it <docId,list<userEmail>>.
+     * @throws IllegalAccessException if the user not logged in.
+     */
     @MessageMapping("/deleteViewer/")
     @SendTo("/topic/viewers/")
     public Map<Long,List<String>> deleteViewer(Long docId, String token) {
@@ -97,70 +91,10 @@ public class DocumentController {
         System.out.println("delete viewer!!");
         return documentsViewers;
     }
-    /*static class UpdateMessage {
-        private String user;
-        private String content;
-        private Long documentId;
-        private UpdateType type;
-        private int position;
-        public UpdateMessage() {
-        }
 
-        public String getUser() {
-            return user;
-        }
-
-        public void setUser(String user) {
-            this.user = user;
-        }
-
-        public String getContent() {
-            return content;
-        }
-
-        public Long getDocumentId() {
-            return documentId;
-        }
-
-
-        public void setContent(String content) {
-            this.content = content;
-        }
-
-        public void setDocumentId(Long documentId) {
-            this.documentId = documentId;
-        }
-        public UpdateType getType() {
-            return type;
-        }
-        public void setType(UpdateType type) {
-            this.type = type;
-        }
-
-        public int getPosition() {
-            return position;
-        }
-
-        public void setPosition(int position) {
-            this.position = position;
-        }
-        @Override
-        public String toString() {
-            return "UpdateMessage{" +
-                    "userId=" + user +
-                    ", content='" + content + '\'' +
-                    ", documentId=" + documentId +
-                    '}';
-        }
-    }
-
-    public enum UpdateType{
-        DELETE,
-        APPEND,
-        DELETE_RANGE,
-        APPEND_RANGE
-    }*/
-
+    /**
+     * Class for each user viewing a document
+     */
     static class JoinDocument {
         private String user;
         private Long docId;

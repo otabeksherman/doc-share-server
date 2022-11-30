@@ -91,6 +91,12 @@ public class AuthenticationService {
             throw new IllegalArgumentException("Not logged in");
         }
     }
+
+    /**
+     * logout for the user (delete his token from tokens map)
+     * @param token - user's login token
+     * @return success message
+     */
     public String logout(String token){
         loginTokens.remove(token);
         return "logout user";

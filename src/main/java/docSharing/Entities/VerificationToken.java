@@ -29,6 +29,11 @@ public class VerificationToken {
         super();
     }
 
+    /**
+     * VerificationToken constructor - set the expiryDate after 7 days from today
+     * @param token
+     * @param user
+     */
     public VerificationToken(final String token, final User user) {
         super();
         Calendar calendar = Calendar.getInstance();
@@ -87,6 +92,12 @@ public class VerificationToken {
         return expiryDate;
     }
 
+    /**
+     * every time before sending the isActivated the function checks if the expiry date before today
+     *      if yes - return true
+     *      if no - return false
+     * @return isActivated
+     */
     public boolean isActivated() {
         if(expiryDate!=null && createdDate!=null) {
             Calendar calendar = Calendar.getInstance();

@@ -23,7 +23,12 @@ public class UserController {
     @Autowired
     AuthenticationService authenticationService;
 
-
+    /**
+     * create a new user and add it to the system
+     * @param user
+     * @return the details of the user (user.toString())
+     * @throws ResponseStatusException if the user already exists
+     */
     @RequestMapping(method = RequestMethod.POST)
     public ResponseEntity<String> createUser(@RequestBody User user){
         try {
@@ -44,9 +49,18 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Confirm registration for user's account
+     * @param activation - has (activation token , user's email)
+     * @return response Entity with an appropriate notice
+     *          bad request - if the token or the email is null (or if any RuntimeException is thrown)
+     *          unauthorized - if the account already activated
+     *          NOT_FOUND - if the token not found
+     *          ok - if the account activated successfully:)
+     */
     @PatchMapping("confirmRegistration")
     public ResponseEntity<String> confirmRegistration(@RequestBody Activation activation) {
-        if (activation.getEmail() == null || activation.getToken() == null) {
+        if (activation.getUserEmail() == null || activation.getToken() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid activation parameters");
         }
         try {
@@ -61,6 +75,12 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.toString());
         }
     }
+
+    /**
+     * logout for the account
+     * @param token - user's login token
+     * @return response Entity with an appropriate notice
+     */
     @PatchMapping("logout")
     public ResponseEntity<String> logout(@RequestParam String token) {
         return new ResponseEntity<>(authenticationService.logout(token),HttpStatus.OK);
