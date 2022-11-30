@@ -26,37 +26,39 @@ public class UserService {
 
     /**
      * create a new user:
-     *      -if user exists in user's table:
-     *              -if activated -> throw SQLDataException("Email exists in users table")
-     *              -if not activated -> check if token valid:
-     *                      -if valid - send it to user's email
-     *                      -if invalid - create new token and send it
      *      -if user does not exist -> add it to user's table and create new activation token and add it
+     *      -if user is alreadyActivated -> throw IllegalArgumentException("Email already activated")
+     *      -if token is invalid -> create new token and send it
+     *      -if token is valid -> resend it to the user
      * @param user - registered user
      * @return the user
-     * @throws SQLDataException
+     * @throws IllegalArgumentException
      */
-    public User addUser(User user) throws SQLDataException {
+    public User addUser(User user) {
         User userRepo = userRepository.findByEmail(user.getEmail());
-        if(userRepo!=null){
-            if(userRepo.getActivated())
-                throw new SQLDataException(String.format("Email %s exists in users table", user.getEmail()));
+        String token;
+        if (userRepo == null) {
+            userRepository.save(user);
+            token = createToken(user);
+        } else if (userRepo.getActivated()) {
+            throw new IllegalArgumentException(String.format("Email %s already activated", user.getEmail()));
+        } else {
             VerificationToken userToken = tokenRepository.findByUser(userRepo);
             if(userToken==null || !userToken.isActivated()){
-                String token = UUID.randomUUID().toString();
-                userToken = new VerificationToken(token, userRepo);
-                tokenRepository.save(userToken);
+                token = createToken(user);
+            } else {
+                token = userToken.getToken();
             }
-            emailListener.confirmRegistration(userRepo,userToken.getToken());
         }
-        else {
-            String token = UUID.randomUUID().toString();
-            VerificationToken newUserToken = new VerificationToken(token, user);
-            userRepository.save(user);
-            tokenRepository.save(newUserToken);
-            emailListener.confirmRegistration(user, token);
-        }
+        emailListener.confirmRegistration(user, token);
         return user;
+    }
+
+    private String createToken(User user) {
+        String token = UUID.randomUUID().toString();
+        VerificationToken newUserToken = new VerificationToken(token, user);
+        tokenRepository.save(newUserToken);
+        return token;
     }
 
     /**
@@ -117,11 +119,11 @@ public class UserService {
      */
     public boolean isActivated(Activation activation) {
         User user = userRepository.findByEmail(activation.getUserEmail());
-        if (user != null) {
-            return user.getActivated();
-        } else {
+        if (user == null) {
             throw new IllegalArgumentException();
         }
+
+        return user.getActivated();
     }
     public User getUserById(Long id){
         return userRepository.findById(id).get();

@@ -7,13 +7,9 @@ import docSharing.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,7 +44,7 @@ public class DocumentController {
      */
     @MessageMapping("/join/")
     @SendTo("/topic/viewers/")
-    public Map<Long,List<String>> sendPlainMessage(JoinDocument joinUser) {
+    public Map<Long,List<String>> sendJoinMessage(JoinDocument joinUser) {
         String userEmail=userService.getUserById(authenticationService.isLoggedIn(joinUser.user)).getEmail();
         List<String> usersEmails = documentsViewers.get(joinUser.docId);
         if(usersEmails==null){
@@ -71,7 +67,7 @@ public class DocumentController {
      */
     @MessageMapping("/update/")
     @SendTo("/topic/updates/")
-    public UpdateMessage sendPlainMessage(UpdateMessage message) throws IllegalAccessException {
+    public UpdateMessage sendPlainMessage(UpdateMessage message) {
         Long userId = authenticationService.isLoggedIn(message.getUser());
         return documentService.updateContent(message,userId);
     }
@@ -87,6 +83,9 @@ public class DocumentController {
     @SendTo("/topic/viewers/")
     public Map<Long,List<String>> deleteViewer(Long docId, String token) {
         String userEmail=userService.getUserById(authenticationService.isLoggedIn(token)).getEmail();
+        if (documentsViewers.get(docId) == null){
+            return documentsViewers;
+        }
         documentsViewers.get(docId).remove(userEmail);
         System.out.println("delete viewer!!");
         return documentsViewers;

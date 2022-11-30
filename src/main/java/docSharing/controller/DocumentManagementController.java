@@ -11,9 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Map;
-import java.util.Set;
-
 @RestController
 @CrossOrigin
 @RequestMapping("api/v1/doc")
@@ -39,8 +36,8 @@ public class DocumentManagementController {
         try {
             Long id = authenticationService.isLoggedIn(token);
             documentService.createDocument(id, title, folderId);
-        } catch (IllegalStateException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "create document failed - " + e.getMessage());
         }
     }
 
@@ -55,7 +52,7 @@ public class DocumentManagementController {
         try {
             Long userId = authenticationService.isLoggedIn(token);
             return new ResponseEntity<>(documentService.getDocumentById(id, userId), HttpStatus.OK);
-        } catch (IllegalStateException e) {
+        } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
         }
     }
@@ -66,7 +63,7 @@ public class DocumentManagementController {
         try {
             Long id = authenticationService.isLoggedIn(token);
             documentService.createDocument(id, title, body, folderId);
-        } catch (IllegalStateException e) {
+        } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
         }
         return ResponseEntity.noContent().build();
@@ -88,7 +85,7 @@ public class DocumentManagementController {
             documentService.moveDocument(id, documentId, folderId);
             LOGGER.debug(String.format("move document request success - token:%s, document:%d to destination folder:%d", token, documentId, folderId));
             return ResponseEntity.noContent().build();
-        } catch (IllegalStateException e) {
+        } catch (IllegalArgumentException e) {
             LOGGER.debug(String.format("move document request failed - token:%s, document:%d to destination folder:%d - " + e.getMessage(), token, documentId, folderId));
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
         }

@@ -30,23 +30,12 @@ public class UserController {
      * @throws ResponseStatusException if the user already exists
      */
     @RequestMapping(method = RequestMethod.POST)
-    public ResponseEntity<String> createUser(@RequestBody User user){
+    public ResponseEntity<User> createUser(@RequestBody User user){
         try {
-            return new ResponseEntity<>(userService.addUser(user).toString(), HttpStatus.OK);
-        } catch (SQLDataException e) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Email already exists", e);
+            return new ResponseEntity<>(userService.addUser(user), HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists", e);
         }
-    }
-
-    @RequestMapping(method = RequestMethod.GET)
-    public ResponseEntity<User> getUserById(@RequestParam int id){
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
-
-    @RequestMapping(value="/delete/{id}")
-    public ResponseEntity<?> deleteUserById(@PathVariable("id") int id){
-        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -71,8 +60,6 @@ public class UserController {
             }
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Token not found.");
-        } catch (RuntimeException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.toString());
         }
     }
 
