@@ -12,7 +12,7 @@ public class VerificationToken {
     private static final int EXPIRATION = 60 * 24;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Long id;
     @Column(name = "token")
     private String token;
     @OneToOne(targetEntity = User.class, fetch = FetchType.EAGER)
@@ -44,7 +44,7 @@ public class VerificationToken {
         calendar.add(Calendar.MINUTE, expiryTimeInMinutes);
         return new Date(calendar.getTime().getTime());
     }
-    public void setId(int id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -60,7 +60,7 @@ public class VerificationToken {
         this.createdDate = createdDate;
     }
 
-    public int getId() {
+    public Long getId() {
         return id;
     }
 
@@ -81,11 +81,13 @@ public class VerificationToken {
     }
 
     public boolean isActivated() {
-        Calendar calendar = Calendar.getInstance();
-        if(new Date(calendar.getTime().getTime()).after(expiryDate))
-            isActivated = false;
-        else
-            isActivated = true;
+        if(expiryDate!=null && createdDate!=null) {
+            Calendar calendar = Calendar.getInstance();
+            if (new Date(calendar.getTime().getTime()).after(expiryDate))
+                isActivated = false;
+            else
+                isActivated = true;
+        } else {isActivated =true;}
         return isActivated;
     }
 

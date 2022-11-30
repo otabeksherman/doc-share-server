@@ -57,10 +57,9 @@ public class UserService {
         }
         User user = userRepository.findByEmail(activation.getEmail());
         VerificationToken token = tokenRepository.findByToken(activation.getToken());
+        tokenRepository.deleteById(token.getId());
         user.setActivated(true);
-        token.setActivated(true);
         userRepository.save(user);
-        tokenRepository.save(token);
         return "The account has been activated successfully";
     }
 
@@ -79,18 +78,13 @@ public class UserService {
 
     private boolean isExpired(Activation activation) {
         VerificationToken token = tokenRepository.findByToken(activation.getToken());
-        Calendar calendar = Calendar.getInstance();
-        if(token.getExpiryDate().before(calendar.getTime())) {
-            return true;
-        }
-        return false;
+        return !token.isActivated();
     }
 
     public boolean isActivated(Activation activation) {
-        VerificationToken token = tokenRepository
-                .findByToken(activation.getToken());
-        if (token != null) {
-            return token.isActivated();
+        User user = userRepository.findByEmail(activation.getEmail());
+        if (user != null) {
+            return user.getActivated();
         } else {
             throw new IllegalArgumentException();
         }
