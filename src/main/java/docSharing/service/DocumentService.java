@@ -64,6 +64,49 @@ public class DocumentService {
     }
 
     /**
+     * moves a document into a folder.
+     * @param userId the id of the user requesting the move.
+     * @param documentId the id of the document to move.
+     * @param folderId the id of the folder where to move the document. if this is -1 will move the document one folder closer to root.
+     * @throws IllegalArgumentException if the user id, document id or folder id is incorrect,
+     * and if the user is not an owner of the document and the folder.
+     */
+    public void moveDocument(Long userId, Long documentId, Long folderId) {
+        Optional<User> user = userRepository.findById(userId);
+        if (!user.isPresent()) {
+            LOGGER.debug(String.format("user:%d doesn't exist", userId));
+            throw new IllegalArgumentException(String.format("User with ID: '%d' doesn't exist", userId));
+        }
+        Optional<Document> document = documentRepository.findById(documentId);
+        if (!document.isPresent()) {
+            LOGGER.debug(String.format("failing to get document:%d - doesn't exist", documentId));
+            throw new IllegalArgumentException(String.format("Document with ID: '%d' doesn't exist", documentId));
+        }
+        if (folderId == -1) {
+            if (document.get().getFolder().getParentFolder() == null) {
+                LOGGER.debug(String.format("failing to move document:%d to parent - folder:%d is a root folder", documentId, folderId));
+                throw new IllegalArgumentException(String.format("document:%d is in your root folder", documentId));
+            }
+            folderId = document.get().getFolder().getParentFolder().getId();
+        }
+        Optional<Folder> folder = folderRepository.findById(folderId);
+        if (!folder.isPresent()) {
+            LOGGER.debug(String.format("failing to get folder:%d - doesn't exist", documentId));
+            throw new IllegalArgumentException(String.format("folder with ID: '%d' doesn't exist", documentId));
+        }
+
+        if (document.get().getOwner() != user.get() || folder.get().getOwner() != user.get()) {
+            LOGGER.debug(String.format("move failed - user:%d is not owner of document:%d and/or folder:%d", userId,documentId, folderId));
+            throw new IllegalArgumentException(
+                    String.format("User with ID: '%d' is not owner of document:%d or folder:%d", userId, documentId, folderId));
+        }
+
+        document.get().setFolder(folder.get());
+        documentRepository.save(document.get());
+        LOGGER.debug(String.format("moved document:%d to folder:%d", documentId, folderId));
+    }
+
+    /**
      * update body of document based on the update message.
      * @param update the wanted update.
      * @param userId the user that wants to perform the update.
@@ -92,7 +135,7 @@ public class DocumentService {
             changers.put(update.getDocumentId(), new DocumentChanger(document.get()));
         }
 
-        LOGGER.debug("sent change to document changer of document:%d");
+        LOGGER.debug(String.format("sent change to document changer of document:%d", document.get().getId()));
         return changers.get(update.getDocumentId()).addUpdate(update);
     }
 

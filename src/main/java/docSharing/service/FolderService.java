@@ -104,6 +104,48 @@ public class FolderService {
         newFolder.setName(name);
         newFolder.setParentFolder(folder.get());
         folderRepository.save(newFolder);
+    }
 
+    /**
+     * moves a folder into another folder.
+     * @param userId the id of the user requesting the move.
+     * @param folderId the id of the folder to move.
+     * @param destinationId the id of the folder where to move the document. if this is -1 will move the document one folder closer to root.
+     * @throws IllegalArgumentException if the user id, folder id or destination id is incorrect,
+     * and if the user is not an owner of the folder and the destination folder.
+     */
+    public void moveFolder(Long userId, Long folderId, Long destinationId) {
+        Optional<User> user = userRepository.findById(userId);
+        if (!user.isPresent()) {
+            LOGGER.debug(String.format("user:%d doesn't exist", userId));
+            throw new IllegalArgumentException(String.format("User with ID: '%d' doesn't exist", userId));
+        }
+        Optional<Folder> folder = folderRepository.findById(folderId);
+        if (!folder.isPresent()) {
+            LOGGER.debug(String.format("failing to get folder:%d - doesn't exist", folderId));
+            throw new IllegalArgumentException(String.format("folder with ID: '%d' doesn't exist", folderId));
+        }
+        if (destinationId == -1) {
+            if (folder.get().getParentFolder().getParentFolder() == null) {
+                LOGGER.debug(String.format("failing to move folder:%d to parent - folder:%d is a root folder", folderId, destinationId));
+                throw new IllegalArgumentException(String.format("folder:%d is in your root folder", folderId));
+            }
+            destinationId = folder.get().getParentFolder().getParentFolder().getId();
+        }
+        Optional<Folder> destinationFolder = folderRepository.findById(destinationId);
+        if (!destinationFolder.isPresent()) {
+            LOGGER.debug(String.format("failing to get folder:%d - doesn't exist", destinationId));
+            throw new IllegalArgumentException(String.format("folder with ID: '%d' doesn't exist", destinationId));
+        }
+
+        if (folder.get().getOwner() != user.get() || destinationFolder.get().getOwner() != user.get()) {
+            LOGGER.debug(String.format("move failed - user:%d is not owner of folder:%d and/or folder:%d", userId,folderId, destinationId));
+            throw new IllegalArgumentException(
+                    String.format("User with ID: '%d' is not owner of folder:%d or folder:%d", userId, folderId, destinationId));
+        }
+
+        folder.get().setParentFolder(destinationFolder.get());
+        folderRepository.save(folder.get());
+        LOGGER.debug(String.format("moved folder:%d to folder:%d", folderId, destinationId));
     }
 }
