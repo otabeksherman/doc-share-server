@@ -25,7 +25,7 @@ public class FolderController {
     @Autowired
     private AuthenticationService authenticationService;
 
-    private static final Logger LOGGER = LogManager.getLogger(FolderService.class);
+    private static final Logger LOGGER = LogManager.getLogger(FolderController.class);
 
     /**
      * gets the main folder for the user. gets called from a REST Get call.

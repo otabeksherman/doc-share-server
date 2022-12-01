@@ -3,9 +3,12 @@ package docSharing.service;
 import docSharing.Entities.Activation;
 import docSharing.Entities.User;
 import docSharing.Entities.VerificationToken;
+import docSharing.controller.DocumentController;
 import docSharing.event.RegistrationEmailListener;
 import docSharing.repository.TokenRepository;
 import docSharing.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +22,10 @@ public class UserService {
     private RegistrationEmailListener emailListener;
     private final UserRepository userRepository;
     private final TokenRepository tokenRepository;
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserService.class);
+
     public UserService(UserRepository userRepository, TokenRepository tokenRepository) {
+        LOGGER.info("In UserService constructor");
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
     }
@@ -39,17 +45,22 @@ public class UserService {
     public User addUser(User user) throws SQLDataException {
         User userRepo = userRepository.findByEmail(user.getEmail());
         if(userRepo!=null){
-            if(userRepo.getActivated())
+            LOGGER.info("user exists in user's table");
+            if(userRepo.getActivated()) {
+                LOGGER.info("user's account is activated");
                 throw new SQLDataException(String.format("Email %s exists in users table", user.getEmail()));
+            }
             VerificationToken userToken = tokenRepository.findByUser(userRepo);
             if(userToken==null || !userToken.isActivated()){
                 String token = UUID.randomUUID().toString();
                 userToken = new VerificationToken(token, userRepo);
                 tokenRepository.save(userToken);
+                LOGGER.info(String.format("create and add a new token for user with email: %s",userRepo.getEmail()));
             }
             emailListener.confirmRegistration(userRepo,userToken.getToken());
         }
         else {
+            LOGGER.info("User does not exist in user's table");
             String token = UUID.randomUUID().toString();
             VerificationToken newUserToken = new VerificationToken(token, user);
             userRepository.save(user);
@@ -67,9 +78,11 @@ public class UserService {
      */
     public String confirmRegistration(Activation activation){
         if (isInvalid(activation)) {
+            LOGGER.debug(String.format("Invalid token: %s",activation.getToken()));
             throw new RuntimeException("redirect:access-denied.....auth.message.invalidToken");
         }
         if (isExpired(activation)) {
+            LOGGER.debug(String.format("Activation token: %s is expired",activation.getToken()));
             throw new RuntimeException("redirect:access-denied.....auth.message.expired");
         }
         User user = userRepository.findByEmail(activation.getUserEmail());
@@ -77,6 +90,7 @@ public class UserService {
         tokenRepository.deleteById(token.getId());
         user.setActivated(true);
         userRepository.save(user);
+        LOGGER.info("Account activated successfully");
         return "The account has been activated successfully";
     }
 
@@ -89,6 +103,7 @@ public class UserService {
     private boolean isInvalid(Activation activation) {
         VerificationToken token = tokenRepository.findByToken(activation.getToken());
         if(token == null) {
+            LOGGER.debug("Token is null");
             return true;
         } else {
             User user = userRepository.findByEmail(activation.getUserEmail());
@@ -96,6 +111,7 @@ public class UserService {
                 return true;
             }
         }
+        LOGGER.debug("Token is valid");
         return false;
     }
 
@@ -120,6 +136,7 @@ public class UserService {
         if (user != null) {
             return user.getActivated();
         } else {
+            LOGGER.debug("User is null");
             throw new IllegalArgumentException();
         }
     }

@@ -86,6 +86,7 @@ public class AuthenticationService {
      */
     public Long isLoggedIn(String token) {
         if (loginTokens.containsKey(token)) {
+            LOGGER.info(String.format("User with token: %s is logged in",token));
             return loginTokens.get(token).getId();
         } else {
             throw new IllegalArgumentException("Not logged in");

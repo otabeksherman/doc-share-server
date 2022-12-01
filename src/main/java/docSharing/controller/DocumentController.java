@@ -49,16 +49,21 @@ public class DocumentController {
     @MessageMapping("/join/")
     @SendTo("/topic/viewers/")
     public Map<Long,List<String>> sendPlainMessage(JoinDocument joinUser) {
+        LOGGER.info(String.format("Client send the joinDocument: %s",joinUser));
         String userEmail=userService.getUserById(authenticationService.isLoggedIn(joinUser.user)).getEmail();
         List<String> usersEmails = documentsViewers.get(joinUser.docId);
         if(usersEmails==null){
+            LOGGER.info(String.format("There is no viewers for document with id: %l",joinUser.docId));
             usersEmails = new ArrayList<>();
             usersEmails.add(userEmail);
             documentsViewers.put(joinUser.docId,usersEmails);
+            LOGGER.info(String.format("Add user to viewers list of the document with id: %l",joinUser.docId));
         }
         else{
-            if(!usersEmails.contains(userEmail))
+            if(!usersEmails.contains(userEmail)) {
+                LOGGER.info(String.format("The user does not exist in viewers list of the document with id: %l", joinUser.docId));
                 usersEmails.add(userEmail);
+            }
         }
         return documentsViewers;
     }
@@ -72,6 +77,7 @@ public class DocumentController {
     @MessageMapping("/update/")
     @SendTo("/topic/updates/")
     public UpdateMessage sendPlainMessage(UpdateMessage message) throws IllegalAccessException {
+        LOGGER.info("request from the client to update document's content");
         Long userId = authenticationService.isLoggedIn(message.getUser());
         return documentService.updateContent(message,userId);
     }
@@ -86,9 +92,10 @@ public class DocumentController {
     @MessageMapping("/deleteViewer/")
     @SendTo("/topic/viewers/")
     public Map<Long,List<String>> deleteViewer(Long docId, String token) {
+        LOGGER.info("Request from the client to delete viewer from document viewer's list");
         String userEmail=userService.getUserById(authenticationService.isLoggedIn(token)).getEmail();
         documentsViewers.get(docId).remove(userEmail);
-        System.out.println("delete viewer!!");
+        LOGGER.info(String.format("Viewer with email: %s deleted from viewer's list",userEmail));
         return documentsViewers;
     }
 

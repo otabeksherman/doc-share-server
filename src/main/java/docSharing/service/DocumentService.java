@@ -52,6 +52,7 @@ public class DocumentService {
                     String.format("Folder with ID: \'%d\' doesn't exist", folderId));
         }
         documentRepository.save(new Document(user.get(), title, folder.get()));
+        LOGGER.info("new document added to document's table");
     }
     /**
      * create document based on the received parameters(including the body of the document) and add it to document's table using documentRepository

@@ -39,7 +39,10 @@ public class DocumentManagementController {
         try {
             Long id = authenticationService.isLoggedIn(token);
             documentService.createDocument(id, title, folderId);
+            LOGGER.info("document created");
+
         } catch (IllegalStateException e) {
+            LOGGER.debug(String.format("The user with token: %s not logged in!",token));
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
         }
     }
@@ -56,6 +59,7 @@ public class DocumentManagementController {
             Long userId = authenticationService.isLoggedIn(token);
             return new ResponseEntity<>(documentService.getDocumentById(id, userId), HttpStatus.OK);
         } catch (IllegalStateException e) {
+            LOGGER.debug(String.format("The user with token: %s not logged in!",token));
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
         }
     }
@@ -66,7 +70,9 @@ public class DocumentManagementController {
         try {
             Long id = authenticationService.isLoggedIn(token);
             documentService.createDocument(id, title, body, folderId);
+            LOGGER.info("document created");
         } catch (IllegalStateException e) {
+            LOGGER.debug(String.format("The user with token: %s not logged in!",token));
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
         }
         return ResponseEntity.noContent().build();

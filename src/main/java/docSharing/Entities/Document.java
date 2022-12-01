@@ -128,4 +128,15 @@ public class Document {
     public int hashCode() {
         return Objects.hash(id, title, owner, body, folder);
     }
+
+    @Override
+    public String toString() {
+        return "Document{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", owner=" + owner +
+                ", body='" + body + '\'' +
+                ", folder=" + folder +
+                '}';
+    }
 }

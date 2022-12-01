@@ -77,4 +77,15 @@ public class Folder {
     public void setParentFolder(Folder parentFolder) {
         this.parentFolder = parentFolder;
     }
+
+    @Override
+    public String toString() {
+        return "Folder{" +
+                "id=" + id +
+                ", owner=" + owner +
+                ", name='" + name + '\'' +
+                ", parentFolder=" + parentFolder +
+                ", innerDocuments=" + innerDocuments +
+                '}';
+    }
 }

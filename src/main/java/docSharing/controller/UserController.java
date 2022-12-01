@@ -3,7 +3,10 @@ package docSharing.controller;
 import docSharing.Entities.Activation;
 import docSharing.Entities.User;
 import docSharing.service.AuthenticationService;
+import docSharing.service.FolderService;
 import docSharing.service.UserService;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +25,8 @@ public class UserController {
 
     @Autowired
     AuthenticationService authenticationService;
+    private static final Logger LOGGER = LogManager.getLogger(UserController.class);
+
 
     /**
      * create a new user and add it to the system
@@ -31,9 +36,11 @@ public class UserController {
      */
     @RequestMapping(method = RequestMethod.POST)
     public ResponseEntity<String> createUser(@RequestBody User user){
+        LOGGER.info("Post request to create user from the client");
         try {
             return new ResponseEntity<>(userService.addUser(user).toString(), HttpStatus.OK);
         } catch (SQLDataException e) {
+            LOGGER.info(String.format("User email: %s already exists in user's table", user.getEmail()));
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST, "Email already exists", e);
         }
@@ -61,17 +68,22 @@ public class UserController {
     @PatchMapping("confirmRegistration")
     public ResponseEntity<String> confirmRegistration(@RequestBody Activation activation) {
         if (activation.getUserEmail() == null || activation.getToken() == null) {
+            LOGGER.debug("User email or activation token is null");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid activation parameters");
         }
         try {
             if (userService.isActivated(activation)) {
+                LOGGER.debug(String.format("User with email: %s already activated",activation.getUserEmail()));
                 return new ResponseEntity<>("Already activated", HttpStatus.UNAUTHORIZED);
             } else {
+                LOGGER.debug(String.format("User with email: %s not activated",activation.getUserEmail()));
                 return new ResponseEntity<>(userService.confirmRegistration(activation), HttpStatus.OK);
             }
         } catch (IllegalArgumentException e) {
+            LOGGER.debug("Token not found!");
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Token not found.");
         } catch (RuntimeException e) {
+            LOGGER.debug("RuntimeException occurred!!");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.toString());
         }
     }
@@ -83,6 +95,7 @@ public class UserController {
      */
     @PatchMapping("logout")
     public ResponseEntity<String> logout(@RequestParam String token) {
+        LOGGER.info(String.format("logout for user with token: %s",token));
         return new ResponseEntity<>(authenticationService.logout(token),HttpStatus.OK);
     }
 }
