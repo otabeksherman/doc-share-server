@@ -118,6 +118,18 @@ public class Document {
         return id;
     }
 
+    public Role getUserRole(User user) {
+        if (this.owner == user) {
+            return Role.OWNER;
+        } else if (this.editors.contains(user)) {
+            return Role.EDITOR;
+        } else if (this.viewers.contains(user)) {
+            return Role.VIEWER;
+        } else {
+            return null;
+        }
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -1,15 +1,21 @@
 package docSharing.controller;
 
+import docSharing.Entities.Document;
+import docSharing.Entities.Role;
 import docSharing.Entities.UpdateMessage;
+import docSharing.Entities.User;
 import docSharing.service.AuthenticationService;
 import docSharing.service.DocumentService;
 import docSharing.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,7 +28,7 @@ public class DocumentController {
     private DocumentService documentService;
     @Autowired
     private UserService userService;
-    private Map<Long, List<String>> documentsViewers;
+    private Map<Long, Map<String, Role>> documentsViewers;
     @Autowired
     AuthenticationService authenticationService;
 
@@ -44,22 +50,27 @@ public class DocumentController {
      */
     @MessageMapping("/join/")
     @SendTo("/topic/viewers/")
-    public Map<Long,List<String>> sendJoinMessage(JoinDocument joinUser) {
-        LOGGER.info(String.format("Client send the joinDocument: %s",joinUser));
-        String userEmail=userService.getUserById(authenticationService.isLoggedIn(joinUser.user)).getEmail();
-        List<String> usersEmails = documentsViewers.get(joinUser.docId);
-        if(usersEmails==null){
-            LOGGER.info(String.format("There is no viewers for document with id: %l",joinUser.docId));
-            usersEmails = new ArrayList<>();
-            usersEmails.add(userEmail);
-            documentsViewers.put(joinUser.docId,usersEmails);
-            LOGGER.info(String.format("Add user to viewers list of the document with id: %l",joinUser.docId));
-        }
-        else{
-            if(!usersEmails.contains(userEmail)) {
-                LOGGER.info(String.format("The user does not exist in viewers list of the document with id: %l", joinUser.docId));
-                usersEmails.add(userEmail);
+    public Map<Long,Map<String, Role>>  sendJoinMessage(JoinDocument joinUser) {
+        Long userId = authenticationService.isLoggedIn(joinUser.user);
+        User user = userService.getUserById(userId);
+        String userEmail=user.getEmail();
+        Document document = documentService.getDocumentById(joinUser.docId, userId);
+        Map<String, Role> usersEmails = documentsViewers.get(joinUser.docId);
+        if(usersEmails==null) {
+            usersEmails = new HashMap<>();
+            Role role = document.getUserRole(user);
+            if (role == null) {
+                throw new IllegalArgumentException("User does not have access to the document");
             }
+            usersEmails.put(userEmail, role);
+            documentsViewers.put(joinUser.docId,usersEmails);
+        }
+        else if (usersEmails.get(userEmail) == null) {
+            Role role = document.getUserRole(user);
+            if (role == null) {
+                throw new IllegalArgumentException("User does not have access to the document");
+            }
+            usersEmails.put(userEmail, role);
         }
         return documentsViewers;
     }
@@ -87,7 +98,7 @@ public class DocumentController {
      */
     @MessageMapping("/deleteViewer/")
     @SendTo("/topic/viewers/")
-    public Map<Long,List<String>> deleteViewer(Long docId, String token) {
+    public Map<Long,Map<String, Role>> deleteViewer(@Payload Long docId, @Header String token) {
         LOGGER.info("Request from the client to delete viewer from document viewer's list");
         String userEmail=userService.getUserById(authenticationService.isLoggedIn(token)).getEmail();
         if (documentsViewers.get(docId) == null){
@@ -97,8 +108,6 @@ public class DocumentController {
         LOGGER.info(String.format("Viewer with email: %s deleted from viewer's list",userEmail));
         return documentsViewers;
     }
-
-
 
     /**
      * Class for each user viewing a document
