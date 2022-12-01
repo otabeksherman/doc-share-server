@@ -56,10 +56,12 @@ public class DocumentManagementController {
      * @throws ResponseStatusException if the user not logged in.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Document> getDocumentById(@PathVariable Long id, @RequestParam String token) {
+    public ResponseEntity<DocumentAndRole> getDocumentById(@PathVariable Long id, @RequestParam String token) {
         try {
-            Long userId = authenticationService.isLoggedIn(token);
-            return new ResponseEntity<>(documentService.getDocumentById(id, userId), HttpStatus.OK);
+            User user = authenticationService.getUserByToken(token);
+            Document doc = documentService.getDocumentById(id, user.getId());
+            DocumentAndRole docAndRole = new DocumentAndRole(doc,doc.getUserRole(user));
+            return new ResponseEntity<>(docAndRole, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             LOGGER.debug(String.format("The user with token: %s not logged in!",token));
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");

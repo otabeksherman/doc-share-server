@@ -152,7 +152,6 @@ public class Document {
                 ", title='" + title + '\'' +
                 ", owner=" + owner +
                 ", body='" + body + '\'' +
-                ", folder=" + folder +
                 '}';
     }
 }
