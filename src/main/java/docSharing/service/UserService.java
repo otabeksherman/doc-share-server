@@ -41,34 +41,31 @@ public class UserService {
      * @return the user
      * @throws IllegalArgumentException
      */
-    public User addUser(User user) throws SQLDataException {
+    public User addUser(User user) {
         User userRepo = userRepository.findByEmail(user.getEmail());
-        if(userRepo!=null){
-            LOGGER.info("user exists in user's table");
-            if(userRepo.getActivated()) {
-                LOGGER.info("user's account is activated");
-                throw new SQLDataException(String.format("Email %s exists in users table", user.getEmail()));
-            }
+        String token;
+        if (userRepo == null) {
+            userRepository.save(user);
+            token = createToken(user);
+        } else if (userRepo.getActivated()) {
+            throw new IllegalArgumentException(String.format("Email %s already activated", user.getEmail()));
+        } else {
             VerificationToken userToken = tokenRepository.findByUser(userRepo);
             if(userToken==null || !userToken.isActivated()){
-                String token = UUID.randomUUID().toString();
-                userToken = new VerificationToken(token, userRepo);
-                tokenRepository.save(userToken);
-                LOGGER.info(String.format("create and add a new token for user with email: %s",userRepo.getEmail()));
+                token = createToken(user);
+            } else {
+                token = userToken.getToken();
             }
-            emailListener.confirmRegistration(userRepo,userToken.getToken());
         }
-        else {
-            LOGGER.info("User does not exist in user's table");
-            String token = UUID.randomUUID().toString();
-            VerificationToken newUserToken = new VerificationToken(token, user);
-            userRepository.save(user);
-            tokenRepository.save(newUserToken);
-            emailListener.confirmRegistration(user, token);
-        }
+        emailListener.confirmRegistration(user, token);
         return user;
     }
-
+    private String createToken(User user) {
+        String token = UUID.randomUUID().toString();
+        VerificationToken newUserToken = new VerificationToken(token, user);
+        tokenRepository.save(newUserToken);
+        return token;
+    }
     /**
      * confirm registration and activate user's account then delete the activation token from the database
      * @param activation - (userEmail,token)
