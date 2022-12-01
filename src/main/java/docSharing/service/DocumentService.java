@@ -38,19 +38,21 @@ public class DocumentService {
      * @param userId - id of the owner of the document
      * @param title for the document
      * @param folderId - folder's id to add the document to it
-     * @throws ResponseStatusException if the user or the folder not exists
+     * @throws ResponseStatusException if the user or the folder not exists, or if the user does not own the folder.
      */
     public void createDocument(Long userId, String title, Long folderId) {
         Optional<User> user = userRepository.findById(userId);
         if (!user.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("User with ID: \'%d\' doesn't exist", userId));
+            throw new IllegalArgumentException(String.format("User with ID: %d doesn't exist", userId));
         }
         Optional<Folder> folder = folderRepository.findById(folderId);
         if (!folder.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("Folder with ID: \'%d\' doesn't exist", folderId));
+            throw new IllegalArgumentException(String.format("Folder with ID: %d doesn't exist", folderId));
         }
+        if (folder.get().getOwner() != user.get()) {
+            throw new IllegalArgumentException(String.format("User:%d is not owner of Folder with ID: %d",userId, folderId));
+        }
+
         documentRepository.save(new Document(user.get(), title, folder.get()));
         LOGGER.info("new document added to document's table");
     }
@@ -60,19 +62,21 @@ public class DocumentService {
      * @param title for the document
      * @param body - the content of the folder
      * @param folderId - folder's id to add the document to it
-     * @throws ResponseStatusException if the user or the folder not exists
+     * @throws ResponseStatusException if the user or the folder not exists, or if the user does not own the folder.
      */
     public void createDocument(Long userId, String title, String body, Long folderId) {
         Optional<User> user = userRepository.findById(userId);
         if (!user.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("User with ID: '%d' doesn't exist", userId));
+            throw new IllegalArgumentException(String.format("User with ID: '%d' doesn't exist", userId));
         }
         Optional<Folder> folder = folderRepository.findById(folderId);
         if (!folder.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("Folder with ID: '%d' doesn't exist", folderId));
+            throw new IllegalArgumentException(String.format("Folder with ID: '%d' doesn't exist", folderId));
         }
+        if (folder.get().getOwner() != user.get()) {
+            throw new IllegalArgumentException(String.format("User:%d is not owner of Folder with ID: %d",userId, folderId));
+        }
+
         Document document = new Document(user.get(), title, folder.get());
         document.setBody(body);
         documentRepository.save(document);
@@ -97,7 +101,7 @@ public class DocumentService {
             LOGGER.debug(String.format("failing to get document:%d - doesn't exist", documentId));
             throw new IllegalArgumentException(String.format("Document with ID: '%d' doesn't exist", documentId));
         }
-        if (folderId == -1) {
+        if (folderId == -1L) {
             if (document.get().getFolder().getParentFolder() == null) {
                 LOGGER.debug(String.format("failing to move document:%d to parent - folder:%d is a root folder", documentId, folderId));
                 throw new IllegalArgumentException(String.format("document:%d is in your root folder", documentId));
@@ -180,6 +184,31 @@ public class DocumentService {
         return doc;
     }
 
+    public Set<Document> getAllDocuments(Long id) throws IllegalArgumentException {
+        Optional<User> user = userRepository.findById(id);
+        if (!user.isPresent()) {
+            throw new IllegalArgumentException(String.format("User with ID: '%d' not found", id));
+        }
+
+        return user.get().getAllDocuments();
+    }
+
+    public void shareDocument(Long ownerId, String userEmail, Long docId, Role role) {
+        Optional<Document> document = documentRepository.findById(docId);
+        if (document.isPresent()) {
+            User otherUser = userRepository.findByEmail(userEmail);
+            if (otherUser != null) {
+                if (role == Role.VIEWER) {
+                    document.get().addViewer(otherUser);
+                }
+                if (role == Role.EDITOR) {
+                    document.get().addEditor(otherUser);
+                }
+                documentRepository.save(document.get());
+            }
+        }
+    }
+
     /**
      * Helper class for managing the changes to a document.
      * runs two threads in the background: 1)managing changes to a document. 2)to save the document to the database.
@@ -197,6 +226,7 @@ public class DocumentService {
 
         DocumentChanger(Document document) {
             this.document = document;
+            if (document.getBody() == null) document.setBody("");
             documentBody = new StringBuffer(document.getBody());
             saveExecutor.scheduleAtFixedRate(this::saveDocument, 0, 5, TimeUnit.SECONDS);
             LOGGER.debug(String.format("Finished creating document changer for document:%d", document.getId()));

@@ -138,7 +138,7 @@ public class FolderService {
             LOGGER.debug(String.format("failing to get folder:%d - doesn't exist", folderId));
             throw new IllegalArgumentException(String.format("folder with ID: '%d' doesn't exist", folderId));
         }
-        if (destinationId == -1) {
+        if (destinationId == -1L) {
             if (folder.get().getParentFolder().getParentFolder() == null) {
                 LOGGER.debug(String.format("failing to move folder:%d to parent - folder:%d is a root folder", folderId, destinationId));
                 throw new IllegalArgumentException(String.format("folder:%d is in your root folder", folderId));

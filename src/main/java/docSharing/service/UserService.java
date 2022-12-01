@@ -4,6 +4,7 @@ import docSharing.Entities.Activation;
 import docSharing.Entities.User;
 import docSharing.Entities.VerificationToken;
 import docSharing.controller.DocumentController;
+import docSharing.Entities.*;
 import docSharing.event.RegistrationEmailListener;
 import docSharing.repository.TokenRepository;
 import docSharing.repository.UserRepository;
@@ -32,17 +33,15 @@ public class UserService {
 
     /**
      * create a new user:
-     *      -if user exists in user's table:
-     *              -if activated -> throw SQLDataException("Email exists in users table")
-     *              -if not activated -> check if token valid:
-     *                      -if valid - send it to user's email
-     *                      -if invalid - create new token and send it
      *      -if user does not exist -> add it to user's table and create new activation token and add it
+     *      -if user is alreadyActivated -> throw IllegalArgumentException("Email already activated")
+     *      -if token is invalid -> create new token and send it
+     *      -if token is valid -> resend it to the user
      * @param user - registered user
      * @return the user
-     * @throws SQLDataException
+     * @throws IllegalArgumentException
      */
-    public User addUser(User user) throws SQLDataException {
+    public User addUser(User user) {
         User userRepo = userRepository.findByEmail(user.getEmail());
         if(userRepo!=null){
             LOGGER.info("user exists in user's table");
@@ -104,42 +103,34 @@ public class UserService {
         VerificationToken token = tokenRepository.findByToken(activation.getToken());
         if(token == null) {
             LOGGER.debug("Token is null");
+        User user = userRepository.findByEmail(activation.getEmail());
+        if(token == null || !token.getUser().getId().equals(user.getId())) {
             return true;
         } else {
-            User user = userRepository.findByEmail(activation.getUserEmail());
-            if(!token.getUser().getId().equals(user.getId())) {
-                return true;
-            }
+            return false;
         }
-        LOGGER.debug("Token is valid");
-        return false;
     }
 
     /**
      * check if the activation token is expired
      * @param activation - (userEmail,token)
-     * @return true if the token is not activated, false if it is activated
+     * @return true if the token is expired, false if not expired
      */
     private boolean isExpired(Activation activation) {
         VerificationToken token = tokenRepository.findByToken(activation.getToken());
-        return !token.isActivated();
+        Calendar calendar = Calendar.getInstance();
+        return token.getExpiryDate().before(calendar.getTime());
     }
 
     /**
      * check if user's account is activated
      * @param activation
      * @return true if activated , false if not activated
-     * @throws IllegalArgumentException If the user does not exist
      */
     public boolean isActivated(Activation activation) {
-        User user = userRepository.findByEmail(activation.getUserEmail());
-        if (user != null) {
-            return user.getActivated();
-        } else {
-            LOGGER.debug("User is null");
-            throw new IllegalArgumentException();
-        }
+        return userRepository.findByEmail(activation.getEmail()).getActivated();
     }
+
     public User getUserById(Long id){
         return userRepository.findById(id).get();
     }

@@ -1,4 +1,4 @@
-package docSharing;
+package docSharing.Service;
 
 import docSharing.Entities.LoginRequest;
 import docSharing.Entities.User;

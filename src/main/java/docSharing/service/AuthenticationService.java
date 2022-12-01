@@ -57,6 +57,10 @@ public class AuthenticationService {
         }
     }
 
+    public boolean doesExistByEmail(String email) {
+        return userRepository.findByEmail(email) != null;
+    }
+
     /**
      * Creates a unique token consisting of letters(capital and lower case) and numbers.
      * @return the unique token created.

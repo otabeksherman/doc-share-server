@@ -1,4 +1,4 @@
-package docSharing;
+package docSharing.controller;
 
 import docSharing.Entities.LoginRequest;
 import docSharing.controller.AuthenticationController;

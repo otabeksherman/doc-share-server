@@ -1,4 +1,4 @@
-package docSharing;
+package docSharing.controller;
 
 import docSharing.Entities.Folder;
 import docSharing.Entities.FolderResponse;
@@ -116,6 +116,34 @@ public class FolderControllerUnitTests {
         doNothing().when(folderService).createFolder(user.getId(), "name", 1L);
 
         ResponseEntity<Void> res = folderController.createFolder("qweASD123zxc", "name", 1L);
+        assertEquals(HttpStatus.ACCEPTED, res.getStatusCode());
+    }
+
+    @Test
+    void moveFolder_FolderAndDestinationEqual_ThrowsResponseStatusException() {
+        Folder secondFolder = new Folder(user);
+        secondFolder.setParentFolder(mainFolder);
+
+        assertThrows(ResponseStatusException.class, () -> folderController.moveFolder(secondFolder.getId(), "qweASD123zxc", secondFolder.getId()));
+    }
+
+    @Test
+    void moveFolder_NotLoggedIn_ThrowsResponseStatusException() {
+        when(authenticationService.isLoggedIn("qweASD123zxc")).thenThrow(IllegalArgumentException.class);
+        assertThrows(ResponseStatusException.class, () -> folderController.moveFolder(20L, "qweASD123zxc", 30L));
+    }
+
+    @Test
+    void moveFolder_ServiceThrows_throwsResponseStatusException() {
+        when(authenticationService.isLoggedIn("qweASD123zxc")).thenReturn(user.getId());
+        doThrow(IllegalArgumentException.class).when(folderService).moveFolder(user.getId(), 20L, 30L);
+
+        assertThrows(ResponseStatusException.class, () -> folderController.moveFolder(20L, "qweASD123zxc", 30L));
+    }
+
+    @Test
+    void moveFolder_GoodRequest_returnsAcceptedCode() {
+        ResponseEntity<Void> res = folderController.moveFolder(1L, "qweASD123zxc", 2L);
         assertEquals(HttpStatus.ACCEPTED, res.getStatusCode());
     }
 }

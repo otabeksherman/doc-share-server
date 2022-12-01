@@ -35,25 +35,14 @@ public class UserController {
      * @throws ResponseStatusException if the user already exists
      */
     @RequestMapping(method = RequestMethod.POST)
-    public ResponseEntity<String> createUser(@RequestBody User user){
+    public ResponseEntity<User> createUser(@RequestBody User user){
         LOGGER.info("Post request to create user from the client");
         try {
-            return new ResponseEntity<>(userService.addUser(user).toString(), HttpStatus.OK);
-        } catch (SQLDataException e) {
+            return new ResponseEntity<>(userService.addUser(user), HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
             LOGGER.info(String.format("User email: %s already exists in user's table", user.getEmail()));
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Email already exists", e);
-        }
-    }
-
-    @RequestMapping(method = RequestMethod.GET)
-    public ResponseEntity<User> getUserById(@RequestParam int id){
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
-
-    @RequestMapping(value="/delete/{id}")
-    public ResponseEntity<?> deleteUserById(@PathVariable("id") int id){
-        return ResponseEntity.noContent().build();
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists", e);
+           }
     }
 
     /**
@@ -71,6 +60,10 @@ public class UserController {
             LOGGER.debug("User email or activation token is null");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid activation parameters");
         }
+        if (!authenticationService.doesExistByEmail(activation.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    String.format("User with email \"%s\" doesn't exist", activation.getEmail()));
+        }
         try {
             if (userService.isActivated(activation)) {
                 LOGGER.debug(String.format("User with email: %s already activated",activation.getUserEmail()));
@@ -82,9 +75,6 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             LOGGER.debug("Token not found!");
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Token not found.");
-        } catch (RuntimeException e) {
-            LOGGER.debug("RuntimeException occurred!!");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.toString());
         }
     }
 
