@@ -60,6 +60,7 @@ public class Document {
         this.viewers.add(user);
         this.editors.add(user);
         this.folder = folder;
+
     }
 
     @JsonIgnore

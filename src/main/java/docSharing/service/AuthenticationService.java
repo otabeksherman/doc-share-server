@@ -89,14 +89,17 @@ public class AuthenticationService {
      * @throws IllegalArgumentException if the token doesn't correspond to a logged-in user.
      */
     public Long isLoggedIn(String token) {
+        return getUserByToken(token).getId();
+    }
+
+    public User getUserByToken(String token){
         if (loginTokens.containsKey(token)) {
             LOGGER.info(String.format("User with token: %s is logged in",token));
-            return loginTokens.get(token).getId();
+            return loginTokens.get(token);
         } else {
             throw new IllegalArgumentException("Not logged in");
         }
     }
-
     /**
      * logout for the user (delete his token from tokens map)
      * @param token - user's login token

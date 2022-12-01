@@ -46,6 +46,10 @@ public class UserController {
             throw new RuntimeException(e);
         }
     }
+    @RequestMapping(method = RequestMethod.GET)
+    public ResponseEntity<User> getUserByToken(@RequestParam String token){
+        return new ResponseEntity<>(authenticationService.getUserByToken(token),HttpStatus.OK);
+    }
 
     /**
      * Confirm registration for user's account
