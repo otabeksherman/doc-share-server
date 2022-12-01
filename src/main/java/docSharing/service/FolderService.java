@@ -1,5 +1,6 @@
 package docSharing.service;
 
+import docSharing.Entities.Document;
 import docSharing.Entities.Folder;
 import docSharing.Entities.User;
 import docSharing.repository.FolderRepository;
@@ -33,22 +34,34 @@ public class FolderService {
      */
     public Folder getMainFolder(Long userId) {
         Optional<Folder> mainFolder = folderRepository.findByOwnerIdAndParentFolderIsNull(userId);
-        if (mainFolder.isPresent()) {
-            return mainFolder.get();
-        }
-
+        Folder folder;
         Optional<User> byId = userRepository.findById(userId);
         if (!byId.isPresent()) {
             LOGGER.debug(String.format("user:%d doesn't exist", userId));
             throw new IllegalArgumentException(String.format("user:%d doesn't exist", userId));
         }
-
+        if (mainFolder.isPresent()) {
+            folder = mainFolder.get();
+            return this.addSharedDocsToMainFolder(folder,byId.get());
+        }
         LOGGER.info(String.format("Main folder for user:%d doesn't exist, creating new folder", userId));
-        Folder folder = new Folder(byId.get());
+        folder = new Folder(byId.get());
+        folder = this.addSharedDocsToMainFolder(folder,byId.get());
         folderRepository.save(folder);
         return folder;
     }
-
+    private Folder addSharedDocsToMainFolder(Folder folder, User user){
+        System.out.println("add shared docs to main folder");
+        System.out.println(user);
+        Set<Document> userDocs = user.getAllDocuments();
+        for (Document doc:
+             userDocs) {
+            if(doc.getOwner()!=user){
+                folder.addDocument(doc);
+            }
+        }
+        return folder;
+    }
     /**
      * Gets a folder by id.
      * @param userId the user's id.
