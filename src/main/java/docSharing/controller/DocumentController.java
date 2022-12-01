@@ -84,6 +84,7 @@ public class DocumentController {
     @MessageMapping("/update/")
     @SendTo("/topic/updates/")
     public UpdateMessage sendPlainMessage(UpdateMessage message) {
+        LOGGER.info("request from the client to update document's content");
         Long userId = authenticationService.isLoggedIn(message.getUser());
         return documentService.updateContent(message,userId);
     }
@@ -98,12 +99,13 @@ public class DocumentController {
     @MessageMapping("/deleteViewer/")
     @SendTo("/topic/viewers/")
     public Map<Long,Map<String, Role>> deleteViewer(@Payload Long docId, @Header String token) {
+        LOGGER.info("Request from the client to delete viewer from document viewer's list");
         String userEmail=userService.getUserById(authenticationService.isLoggedIn(token)).getEmail();
         if (documentsViewers.get(docId) == null){
             return documentsViewers;
         }
         documentsViewers.get(docId).remove(userEmail);
-        System.out.println("delete viewer!!");
+        LOGGER.info(String.format("Viewer with email: %s deleted from viewer's list",userEmail));
         return documentsViewers;
     }
 

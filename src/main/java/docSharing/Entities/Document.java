@@ -60,6 +60,7 @@ public class Document {
         this.viewers.add(user);
         this.editors.add(user);
         this.folder = folder;
+
     }
 
     @JsonIgnore
@@ -142,5 +143,15 @@ public class Document {
     @Override
     public int hashCode() {
         return Objects.hash(id, title, owner, body, folder);
+    }
+
+    @Override
+    public String toString() {
+        return "Document{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", owner=" + owner +
+                ", body='" + body + '\'' +
+                '}';
     }
 }

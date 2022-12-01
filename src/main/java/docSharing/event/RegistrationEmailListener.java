@@ -1,6 +1,9 @@
 package docSharing.event;
 
 import docSharing.Entities.User;
+import docSharing.controller.UserController;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -16,6 +19,7 @@ public class RegistrationEmailListener {
 
     @Autowired
     private Environment env;
+    private static final Logger LOGGER = LogManager.getLogger(RegistrationEmailListener.class);
 
     /**
      * send activation message to user's email that contains activation link with user's email and activation token
@@ -61,6 +65,7 @@ public class RegistrationEmailListener {
                     + env.getProperty("page.activation")
                     + params + "\n" + messagePartTwo);
             Transport.send(emailMessage);
+            LOGGER.info(String.format("Activation message sent to email: %s",to));
         } catch (MessagingException mex) {
             mex.printStackTrace();
         }
