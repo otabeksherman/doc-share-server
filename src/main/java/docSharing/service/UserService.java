@@ -41,7 +41,7 @@ public class UserService {
      * @return the user
      * @throws IllegalArgumentException
      */
-    public User addUser(User user) {
+    public User addUser(User user) throws SQLDataException {
         User userRepo = userRepository.findByEmail(user.getEmail());
         if(userRepo!=null){
             LOGGER.info("user exists in user's table");
@@ -84,7 +84,7 @@ public class UserService {
             LOGGER.debug(String.format("Activation token: %s is expired",activation.getToken()));
             throw new RuntimeException("redirect:access-denied.....auth.message.expired");
         }
-        User user = userRepository.findByEmail(activation.getUserEmail());
+        User user = userRepository.findByEmail(activation.getEmail());
         VerificationToken token = tokenRepository.findByToken(activation.getToken());
         tokenRepository.deleteById(token.getId());
         user.setActivated(true);
@@ -101,8 +101,6 @@ public class UserService {
      */
     private boolean isInvalid(Activation activation) {
         VerificationToken token = tokenRepository.findByToken(activation.getToken());
-        if(token == null) {
-            LOGGER.debug("Token is null");
         User user = userRepository.findByEmail(activation.getEmail());
         if(token == null || !token.getUser().getId().equals(user.getId())) {
             return true;

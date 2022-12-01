@@ -42,7 +42,9 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             LOGGER.info(String.format("User email: %s already exists in user's table", user.getEmail()));
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists", e);
-           }
+           } catch (SQLDataException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -56,7 +58,7 @@ public class UserController {
      */
     @PatchMapping("confirmRegistration")
     public ResponseEntity<String> confirmRegistration(@RequestBody Activation activation) {
-        if (activation.getUserEmail() == null || activation.getToken() == null) {
+        if (activation.getEmail() == null || activation.getToken() == null) {
             LOGGER.debug("User email or activation token is null");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid activation parameters");
         }
@@ -66,10 +68,10 @@ public class UserController {
         }
         try {
             if (userService.isActivated(activation)) {
-                LOGGER.debug(String.format("User with email: %s already activated",activation.getUserEmail()));
+                LOGGER.debug(String.format("User with email: %s already activated",activation.getEmail()));
                 return new ResponseEntity<>("Already activated", HttpStatus.UNAUTHORIZED);
             } else {
-                LOGGER.debug(String.format("User with email: %s not activated",activation.getUserEmail()));
+                LOGGER.debug(String.format("User with email: %s not activated",activation.getEmail()));
                 return new ResponseEntity<>(userService.confirmRegistration(activation), HttpStatus.OK);
             }
         } catch (IllegalArgumentException e) {

@@ -15,6 +15,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.sql.SQLDataException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
@@ -44,14 +46,14 @@ public class UserControllerUnitTests {
     }
 
     @Test
-    void createUser_EmailAlreadyTaken_throwsResponseStatusException() {
+    void createUser_EmailAlreadyTaken_throwsResponseStatusException() throws SQLDataException {
         when(userService.addUser(user)).thenThrow(IllegalArgumentException.class);
 
         assertThrows(ResponseStatusException.class, () -> userController.createUser(user));
     }
 
     @Test
-    void createUser_GoodRequest_returnsGoodResponse() {
+    void createUser_GoodRequest_returnsGoodResponse() throws SQLDataException {
         when(userService.addUser(user)).thenReturn(user);
 
         ResponseEntity<User> response = userController.createUser(user);
