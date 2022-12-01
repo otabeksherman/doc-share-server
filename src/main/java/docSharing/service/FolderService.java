@@ -42,15 +42,17 @@ public class FolderService {
         }
         if (mainFolder.isPresent()) {
             folder = mainFolder.get();
-            return this.addSharedDocsToMainFolder(folder,byId.get());
+            addSharedDocsToMainFolder(folder,byId.get());
+
+            return folder;
         }
         LOGGER.info(String.format("Main folder for user:%d doesn't exist, creating new folder", userId));
         folder = new Folder(byId.get());
-        folder = this.addSharedDocsToMainFolder(folder,byId.get());
+        addSharedDocsToMainFolder(folder,byId.get());
         folderRepository.save(folder);
         return folder;
     }
-    private Folder addSharedDocsToMainFolder(Folder folder, User user){
+    private void addSharedDocsToMainFolder(Folder folder, User user){
         System.out.println("add shared docs to main folder");
         System.out.println(user);
         Set<Document> userDocs = user.getAllDocuments();
@@ -60,22 +62,29 @@ public class FolderService {
                 folder.addDocument(doc);
             }
         }
-        return folder;
     }
     /**
      * Gets a folder by id.
      * @param userId the user's id.
      * @param folderId the wanted folder.
      * @return the folder got.
-     * @throws IllegalArgumentException if the folder doesn't exist or the folder is not owned by the user.
+     * @throws IllegalArgumentException if the user, or folder doesn't exist, or the folder is not owned by the user.
      */
     public Folder getFolder(Long userId, Long folderId) {
+        Optional<User> user = userRepository.findById(userId);
+        if (!user.isPresent()) {
+            LOGGER.debug(String.format("user:%d doesn't exist", userId));
+            throw new IllegalArgumentException(String.format("user:%d doesn't exist", userId));
+        }
         Optional<Folder> optFolder = folderRepository.findById(folderId);
         if (!optFolder.isPresent()) {
             LOGGER.debug(String.format("failing to get folder:%d - folder doesn't exist", folderId));
             throw new IllegalArgumentException("Folder doesn't exist");
         }
         Folder folder = optFolder.get();
+        if (folder.getParentFolder() == null) {
+            addSharedDocsToMainFolder(folder,user.get());
+        }
         if (!Objects.equals(folder.getOwner().getId(), userId)) {
             LOGGER.debug(String.format("failing to get folder:%d - user:%d is not owner", folderId, userId));
             throw new IllegalArgumentException("Folder not owned by user");

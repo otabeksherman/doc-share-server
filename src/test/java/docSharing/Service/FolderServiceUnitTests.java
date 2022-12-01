@@ -51,6 +51,7 @@ public class FolderServiceUnitTests {
     @Test
     void getMainFolder_MainFolderIsPresent_returnsMainFolder() {
         when(folderRepository.findByOwnerIdAndParentFolderIsNull(user.getId())).thenReturn(Optional.of(mainFolder));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
         assertEquals(mainFolder, folderService.getMainFolder(user.getId()));
     }

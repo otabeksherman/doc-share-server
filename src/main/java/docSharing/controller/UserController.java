@@ -42,8 +42,6 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             LOGGER.info(String.format("User email: %s already exists in user's table", user.getEmail()));
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists", e);
-           } catch (SQLDataException e) {
-            throw new RuntimeException(e);
         }
     }
     @RequestMapping(method = RequestMethod.GET)
