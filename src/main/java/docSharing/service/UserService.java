@@ -1,9 +1,15 @@
 package docSharing.service;
 
+import docSharing.Entities.Activation;
+import docSharing.Entities.User;
+import docSharing.Entities.VerificationToken;
+import docSharing.controller.DocumentController;
 import docSharing.Entities.*;
 import docSharing.event.RegistrationEmailListener;
 import docSharing.repository.TokenRepository;
 import docSharing.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +23,10 @@ public class UserService {
     private RegistrationEmailListener emailListener;
     private final UserRepository userRepository;
     private final TokenRepository tokenRepository;
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserService.class);
+
     public UserService(UserRepository userRepository, TokenRepository tokenRepository) {
+        LOGGER.info("In UserService constructor");
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
     }
@@ -51,14 +60,12 @@ public class UserService {
         emailListener.confirmRegistration(user, token);
         return user;
     }
-
     private String createToken(User user) {
         String token = UUID.randomUUID().toString();
         VerificationToken newUserToken = new VerificationToken(token, user);
         tokenRepository.save(newUserToken);
         return token;
     }
-
     /**
      * confirm registration and activate user's account then delete the activation token from the database
      * @param activation - (userEmail,token)
@@ -67,9 +74,11 @@ public class UserService {
      */
     public String confirmRegistration(Activation activation){
         if (isInvalid(activation)) {
+            LOGGER.debug(String.format("Invalid token: %s",activation.getToken()));
             throw new RuntimeException("redirect:access-denied.....auth.message.invalidToken");
         }
         if (isExpired(activation)) {
+            LOGGER.debug(String.format("Activation token: %s is expired",activation.getToken()));
             throw new RuntimeException("redirect:access-denied.....auth.message.expired");
         }
         User user = userRepository.findByEmail(activation.getEmail());
@@ -77,6 +86,7 @@ public class UserService {
         tokenRepository.deleteById(token.getId());
         user.setActivated(true);
         userRepository.save(user);
+        LOGGER.info("Account activated successfully");
         return "The account has been activated successfully";
     }
 

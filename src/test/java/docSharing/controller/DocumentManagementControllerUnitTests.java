@@ -1,6 +1,7 @@
 package docSharing.controller;
 
 import docSharing.Entities.Document;
+import docSharing.Entities.DocumentAndRole;
 import docSharing.Entities.Folder;
 import docSharing.Entities.User;
 import docSharing.service.AuthenticationService;
@@ -93,10 +94,10 @@ public class DocumentManagementControllerUnitTests {
         when(authenticationService.isLoggedIn("qweASD123zxc")).thenReturn(user.getId());
         when(documentService.getDocumentById(document.getId(), user.getId())).thenReturn(document);
 
-        ResponseEntity<Document> response = documentManagementController.getDocumentById(document.getId(), "qweASD123zxc");
+        ResponseEntity<DocumentAndRole> response = documentManagementController.getDocumentById(document.getId(), "qweASD123zxc");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(document, response.getBody());
+        assertEquals(document, response.getBody().getDocument());
     }
 
     @Test
