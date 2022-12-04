@@ -76,14 +76,14 @@ public class DocumentManagementControllerUnitTests {
 
     @Test
     void getDocumentById_TokenInvalid_throwsResponseStatusException() {
-        when(authenticationService.isLoggedIn("qweASD123zxc")).thenThrow(IllegalArgumentException.class);
+        when(authenticationService.getUserByToken("qweASD123zxc")).thenThrow(IllegalArgumentException.class);
 
         assertThrows(ResponseStatusException.class, () -> documentManagementController.getDocumentById(document.getId(), "qweASD123zxc"));
     }
 
     @Test
     void getDocumentById_ServiceThrows_throwsResponseStatusException () {
-        when(authenticationService.isLoggedIn("qweASD123zxc")).thenReturn(user.getId());
+        when(authenticationService.getUserByToken("qweASD123zxc")).thenReturn(user);
         when(documentService.getDocumentById(document.getId(), user.getId())).thenThrow(IllegalArgumentException.class);
 
         assertThrows(ResponseStatusException.class, () -> documentManagementController.getDocumentById(document.getId(), "qweASD123zxc"));
@@ -91,7 +91,7 @@ public class DocumentManagementControllerUnitTests {
 
     @Test
     void getDocumentById_GoodRequest_returnsOkResponseWithDocument () {
-        when(authenticationService.isLoggedIn("qweASD123zxc")).thenReturn(user.getId());
+        when(authenticationService.getUserByToken("qweASD123zxc")).thenReturn(user);
         when(documentService.getDocumentById(document.getId(), user.getId())).thenReturn(document);
 
         ResponseEntity<DocumentAndRole> response = documentManagementController.getDocumentById(document.getId(), "qweASD123zxc");

@@ -14,6 +14,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -72,6 +73,8 @@ public class DocumentControllerUnitTests {
     void sendJoinMessage_SingleUser_returnsArraySizeOne() {
         when(authenticationService.isLoggedIn("qweASD123zxc")).thenReturn(user.getId());
         when(userService.getUserById(user.getId())).thenReturn(user);
+        when(documentService.getDocumentById(joinDocument.getDocId(), user.getId())).thenReturn(document);
+        document.addEditor(user);
 
         Map<String, Role> viewers = documentController.sendJoinMessage(joinDocument).get(joinDocument.getDocId());
 
@@ -83,9 +86,13 @@ public class DocumentControllerUnitTests {
 
     @Test
     void sendJoinMessage_ThreeUsers_returnsArraySizeThree() {
+        User user2 = createUser("gideon@gmail.com");
+        User user3 = createUser("figglophobia@gmail.com");
         when(authenticationService.isLoggedIn("qweASD123zxc")).thenReturn(user.getId());
-        when(userService.getUserById(user.getId())).thenReturn(user, createUser("gideon@gmail.com"), createUser("figglophobia@gmail.com"),
-                                                                user, createUser("gideon@gmail.com"), createUser("figglophobia@gmail.com"));
+        when(userService.getUserById(user.getId())).thenReturn(user, user2, user3, user, user2, user3);
+        when(documentService.getDocumentById(joinDocument.getDocId(), user.getId())).thenReturn(document);
+        document.addViewer(user2);
+        document.addViewer(user3);
 
         documentController.sendJoinMessage(joinDocument).get(joinDocument.getDocId());
         documentController.sendJoinMessage(joinDocument).get(joinDocument.getDocId());
@@ -93,8 +100,8 @@ public class DocumentControllerUnitTests {
 
 
         assertEquals(3, viewers.size());
-        Object[] usersList = Stream.of(user, createUser("gideon@gmail.com"), createUser("figglophobia@gmail.com")).map(User::getEmail).toArray();
-        assertArrayEquals(usersList, viewers.values().toArray());
+        Object[] usersList = Stream.of(user.getEmail(), "gideon@gmail.com", "figglophobia@gmail.com").toArray();
+        assertArrayEquals(usersList, viewers.keySet().toArray());
 
         documentController.deleteViewer(joinDocument.getDocId(), "qweASD123zxc");
         documentController.deleteViewer(joinDocument.getDocId(), "qweASD123zxc");
@@ -104,6 +111,7 @@ public class DocumentControllerUnitTests {
     private User createUser(String email) {
         User newUser = new User();
         newUser.setEmail(email);
+        newUser.setId((long) email.hashCode());
         return newUser;
     }
 
@@ -111,6 +119,7 @@ public class DocumentControllerUnitTests {
     void sendJoinMessage_SingleUserTwice_returnsArraySizeOne() {
         when(authenticationService.isLoggedIn("qweASD123zxc")).thenReturn(user.getId());
         when(userService.getUserById(user.getId())).thenReturn(user);
+        when(documentService.getDocumentById(joinDocument.getDocId(), user.getId())).thenReturn(document);
 
         documentController.sendJoinMessage(joinDocument).get(joinDocument.getDocId());
         Map<String, Role> viewers = documentController.sendJoinMessage(joinDocument).get(joinDocument.getDocId());
@@ -162,6 +171,7 @@ public class DocumentControllerUnitTests {
     void deleteViewer_ViewingAlone_NoViewers() {
         when(authenticationService.isLoggedIn("qweASD123zxc")).thenReturn(user.getId());
         when(userService.getUserById(user.getId())).thenReturn(user);
+        when(documentService.getDocumentById(joinDocument.getDocId(), user.getId())).thenReturn(document);
         documentController.sendJoinMessage(joinDocument);
         Map<String, Role> viewers = documentController.deleteViewer(document.getId(), "qweASD123zxc").get(document.getId());
 
@@ -170,16 +180,21 @@ public class DocumentControllerUnitTests {
 
     @Test
     void deleteViewer_ViewingWithMoreUsers_NoLongerViewing() {
+        User user2 = createUser("gideon@gmail.com");
+        User user3 = createUser("figglophobia@gmail.com");
         when(authenticationService.isLoggedIn("qweASD123zxc")).thenReturn(user.getId());
-        when(userService.getUserById(user.getId())).thenReturn(user, createUser("gideon@gmail.com"), createUser("figglophobia@gmail.com"),
-                                                                user, createUser("gideon@gmail.com"), createUser("figglophobia@gmail.com"));
+        when(userService.getUserById(user.getId())).thenReturn(user, user2, user3, user, user2, user3);
+        when(documentService.getDocumentById(joinDocument.getDocId(), user.getId())).thenReturn(document);
+        document.addViewer(user2);
+        document.addViewer(user3);
+
         documentController.sendJoinMessage(joinDocument);
         documentController.sendJoinMessage(joinDocument);
         documentController.sendJoinMessage(joinDocument);
 
         Map<String, Role> viewers = documentController.deleteViewer(document.getId(), "qweASD123zxc").get(document.getId());
         Object[] usersList = Stream.of(createUser("gideon@gmail.com"), createUser("figglophobia@gmail.com")).map(User::getEmail).toArray();
-        assertArrayEquals(usersList, viewers.values().toArray());
+        assertArrayEquals(usersList, viewers.keySet().toArray());
 
         documentController.deleteViewer(joinDocument.getDocId(), "qweASD123zxc");
         documentController.deleteViewer(joinDocument.getDocId(), "qweASD123zxc");

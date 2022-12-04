@@ -75,7 +75,7 @@ public class DocumentManagementController {
             Long id = authenticationService.isLoggedIn(token);
             documentService.createDocument(id, title, body, folderId);
             LOGGER.info("document created");
-        } catch (IllegalStateException e) {
+        } catch (IllegalArgumentException e) {
             LOGGER.debug(String.format("The user with token: %s not logged in!",token));
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
         }

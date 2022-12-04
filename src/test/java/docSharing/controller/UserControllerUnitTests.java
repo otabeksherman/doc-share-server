@@ -87,6 +87,7 @@ public class UserControllerUnitTests {
     @Test
     void confirmRegistration_AlreadyActivated_throwsResponseStatusException() {
         Activation activation = new Activation("gideon.jaffe@gmail.com", "qweASD123zxc");
+        when(authenticationService.doesExistByEmail(activation.getEmail())).thenReturn(true);
         when(userService.isActivated(activation)).thenReturn(true);
 
         ResponseEntity<String> response = userController.confirmRegistration(activation);
@@ -98,6 +99,7 @@ public class UserControllerUnitTests {
     @Test
     void confirmRegistration_GoodRequest_returnsOkResponse() {
         Activation activation = new Activation("gideon.jaffe@gmail.com", "qweASD123zxc");
+        when(authenticationService.doesExistByEmail(activation.getEmail())).thenReturn(true);
         when(userService.isActivated(activation)).thenReturn(false);
         when(userService.confirmRegistration(activation)).thenReturn("The account has been activated successfully");
 
