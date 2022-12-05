@@ -2,10 +2,12 @@ package docSharing.controller;
 
 import docSharing.Entities.*;
 import docSharing.service.AuthenticationService;
+import docSharing.service.ChangeLogService;
 import docSharing.service.DocumentService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +28,8 @@ public class DocumentManagementController {
     private DocumentService documentService;
     @Autowired
     AuthenticationService authenticationService;
+    @Autowired
+    ChangeLogService changeLogService;
 
     private static final Logger LOGGER = LogManager.getLogger(DocumentManagementController.class);
 
@@ -138,6 +142,17 @@ public class DocumentManagementController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
         }
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @GetMapping("logs")
+    public ResponseEntity<List<ChangeLog>> getChangeLogs(@RequestParam String token,
+                                                   @RequestParam Long docId) {
+        try {
+            Long userId = authenticationService.isLoggedIn(token);
+            return new ResponseEntity<>(changeLogService.getChangeLogs(docId), HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not logged in");
+        }
     }
 
     private List<UserResponse> getUsersAsUserResponse(Set<User> users) {

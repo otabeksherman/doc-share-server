@@ -10,6 +10,14 @@ public class UpdateMessage {
     public UpdateMessage() {
     }
 
+    public UpdateMessage(String user, String content, long documentId, UpdateType type, int position) {
+        this.user = user;
+        this.content = content;
+        this.documentId = documentId;
+        this.type = type;
+        this.position = position;
+    }
+
     public String getUser() {
         return user;
     }

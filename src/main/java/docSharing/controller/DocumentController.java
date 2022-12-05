@@ -5,6 +5,7 @@ import docSharing.Entities.Role;
 import docSharing.Entities.UpdateMessage;
 import docSharing.Entities.User;
 import docSharing.service.AuthenticationService;
+import docSharing.service.ChangeLogService;
 import docSharing.service.DocumentService;
 import docSharing.service.UserService;
 import org.slf4j.Logger;
@@ -31,6 +32,8 @@ public class DocumentController {
     private Map<Long, Map<String, Role>> documentsViewers;
     @Autowired
     AuthenticationService authenticationService;
+    @Autowired
+    private ChangeLogService changeLogService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DocumentController.class);
 
@@ -86,6 +89,7 @@ public class DocumentController {
     public UpdateMessage sendPlainMessage(UpdateMessage message) {
         LOGGER.info("request from the client to update document's content");
         Long userId = authenticationService.isLoggedIn(message.getUser());
+        changeLogService.addLog(message);
         return documentService.updateContent(message,userId);
     }
 

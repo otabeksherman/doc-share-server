@@ -50,14 +50,16 @@ public class DocumentService {
             throw new IllegalArgumentException(String.format("Folder with ID: %d doesn't exist", folderId));
         }
         if (folder.get().getOwner() != user.get()) {
-            throw new IllegalArgumentException(String.format("User:%d is not owner of Folder with ID: %d",userId, folderId));
+            throw new IllegalArgumentException(String.format("User:%d is not owner of Folder with ID: %d",
+                    userId, folderId));
         }
 
         documentRepository.save(new Document(user.get(), title, folder.get()));
         LOGGER.info("new document added to document's table");
     }
     /**
-     * create document based on the received parameters(including the body of the document) and add it to document's table using documentRepository
+     * create document based on the received parameters(including the body of the document) and add it to
+     * document's table using documentRepository
      * @param userId - id of the owner of the document
      * @param title for the document
      * @param body - the content of the folder
@@ -74,7 +76,8 @@ public class DocumentService {
             throw new IllegalArgumentException(String.format("Folder with ID: '%d' doesn't exist", folderId));
         }
         if (folder.get().getOwner() != user.get()) {
-            throw new IllegalArgumentException(String.format("User:%d is not owner of Folder with ID: %d",userId, folderId));
+            throw new IllegalArgumentException(String.format("User:%d is not owner of Folder with ID: %d",
+                    userId, folderId));
         }
 
         Document document = new Document(user.get(), title, folder.get());
@@ -86,7 +89,8 @@ public class DocumentService {
      * moves a document into a folder.
      * @param userId the id of the user requesting the move.
      * @param documentId the id of the document to move.
-     * @param folderId the id of the folder where to move the document. if this is -1 will move the document one folder closer to root.
+     * @param folderId the id of the folder where to move the document. if this is -1 will move the document
+     *                 one folder closer to root.
      * @throws IllegalArgumentException if the user id, document id or folder id is incorrect,
      * and if the user is not an owner of the document and the folder.
      */
@@ -99,25 +103,31 @@ public class DocumentService {
         Optional<Document> document = documentRepository.findById(documentId);
         if (!document.isPresent()) {
             LOGGER.debug(String.format("failing to get document:%d - doesn't exist", documentId));
-            throw new IllegalArgumentException(String.format("Document with ID: '%d' doesn't exist", documentId));
+            throw new IllegalArgumentException(String.format("Document with ID: '%d' doesn't exist",
+                    documentId));
         }
         if (folderId == -1L) {
             if (document.get().getFolder().getParentFolder() == null) {
-                LOGGER.debug(String.format("failing to move document:%d to parent - folder:%d is a root folder", documentId, folderId));
-                throw new IllegalArgumentException(String.format("document:%d is in your root folder", documentId));
+                LOGGER.debug(String.format("failing to move document:%d to parent - folder:%d is a root folder",
+                        documentId, folderId));
+                throw new IllegalArgumentException(String.format("document:%d is in your root folder",
+                        documentId));
             }
             folderId = document.get().getFolder().getParentFolder().getId();
         }
         Optional<Folder> folder = folderRepository.findById(folderId);
         if (!folder.isPresent()) {
             LOGGER.debug(String.format("failing to get folder:%d - doesn't exist", documentId));
-            throw new IllegalArgumentException(String.format("folder with ID: '%d' doesn't exist", documentId));
+            throw new IllegalArgumentException(String.format("folder with ID: '%d' doesn't exist",
+                    documentId));
         }
 
         if (document.get().getOwner() != user.get() || folder.get().getOwner() != user.get()) {
-            LOGGER.debug(String.format("move failed - user:%d is not owner of document:%d and/or folder:%d", userId,documentId, folderId));
+            LOGGER.debug(String.format("move failed - user:%d is not owner of document:%d and/or folder:%d",
+                    userId,documentId, folderId));
             throw new IllegalArgumentException(
-                    String.format("User with ID: '%d' is not owner of document:%d or folder:%d", userId, documentId, folderId));
+                    String.format("User with ID: '%d' is not owner of document:%d or folder:%d",
+                            userId, documentId, folderId));
         }
 
         document.get().setFolder(folder.get());
@@ -130,7 +140,8 @@ public class DocumentService {
      * @param update the wanted update.
      * @param userId the user that wants to perform the update.
      * @return the update message after the update is completed. the update may change during the update process.
-     * @throws IllegalArgumentException if the user id is incorrect, if the document id is incorrect, or if the user doesn't have editing permissions for the document.
+     * @throws IllegalArgumentException if the user id is incorrect, if the document id is incorrect,
+     * or if the user doesn't have editing permissions for the document.
      */
     public UpdateMessage updateContent(UpdateMessage update, Long userId) {
         Optional<User> user = userRepository.findById(userId);
@@ -141,12 +152,15 @@ public class DocumentService {
         Optional<Document> document = documentRepository.findById(update.getDocumentId());
         if (!document.isPresent()) {
             LOGGER.debug(String.format("failing to get document:%d - doesn't exist", update.getDocumentId()));
-            throw new IllegalArgumentException(String.format("Document with ID: '%d' doesn't exist", update.getDocumentId()));
+            throw new IllegalArgumentException(String.format("Document with ID: '%d' doesn't exist",
+                    update.getDocumentId()));
         }
         if (!document.get().getEditors().contains(user.get())) {
-            LOGGER.debug(String.format("update failed - user:%d - doesn't have write permissions to document:%d", userId,update.getDocumentId()));
+            LOGGER.debug(String.format("update failed - user:%d - doesn't have write permissions to document:%d",
+                    userId,update.getDocumentId()));
             throw new IllegalArgumentException(
-                    String.format("User with ID: '%d' doesn't have Editor permissions in document with ID:' %d'", userId, update.getDocumentId()));
+                    String.format("User with ID: '%d' doesn't have Editor permissions in document with ID:' %d'",
+                            userId, update.getDocumentId()));
         }
 
         if (changers.get(update.getDocumentId()) == null) {
@@ -163,7 +177,8 @@ public class DocumentService {
      * @param docId
      * @param userId
      * @return the relevant document
-     * @throws IllegalArgumentException if the document or the user not exists or if the user haven't permissions for the document
+     * @throws IllegalArgumentException if the document or the user not exists or if the user haven't
+     * permissions for the document
      */
     public Document getDocumentById(Long docId, Long userId) {
         Optional<Document> optDoc = documentRepository.findById(docId);
