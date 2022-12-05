@@ -92,6 +92,7 @@ public class FolderServiceUnitTests {
 
     @Test
     void getFolder_FolderExistsAndOwnedByUser_returnsFolder() {
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(folderRepository.findById(1L)).thenReturn(Optional.of(mainFolder));
 
         assertEquals(mainFolder, folderService.getFolder(user.getId(), 1L));

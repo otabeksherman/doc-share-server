@@ -123,7 +123,11 @@ public class UserService {
      * @return true if activated , false if not activated
      */
     public boolean isActivated(Activation activation) {
-        return userRepository.findByEmail(activation.getEmail()).getActivated();
+        User user = userRepository.findByEmail(activation.getEmail());
+        if (user == null) {
+            throw new IllegalArgumentException(String.format("No user for mail %s", activation.getEmail()));
+        }
+        return user.getActivated();
     }
 
     public User getUserById(Long id){
