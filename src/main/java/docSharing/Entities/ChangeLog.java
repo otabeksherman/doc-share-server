@@ -22,16 +22,18 @@ public class ChangeLog {
 
     private String body;
     private LocalDateTime lastModified;
+    private UpdateType updateType;
 
     public ChangeLog(){}
 
-    public ChangeLog(Long documentId, int position, String email, String body) {
+    public ChangeLog(Long documentId, int position, String email, String body, UpdateType updateType) {
         this.documentId = documentId;
         this.startPosition = position;
         this.endPosition = startPosition + 1;
         this.email = email;
         this.body = body;
         this.lastModified = LocalDateTime.now();
+        this.updateType = updateType;
     }
 
     public Long getId() {
@@ -80,6 +82,10 @@ public class ChangeLog {
 
     public void setLastModified(LocalDateTime lastModified) {
         this.lastModified = lastModified;
+    }
+
+    public UpdateType getUpdateType() {
+        return updateType;
     }
 
     public void forwardChangeLogStartIndex() {

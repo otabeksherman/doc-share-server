@@ -1,9 +1,6 @@
 package docSharing.service;
 
-import docSharing.Entities.ChangeLog;
-import docSharing.Entities.Document;
-import docSharing.Entities.UpdateMessage;
-import docSharing.Entities.UpdateType;
+import docSharing.Entities.*;
 import docSharing.repository.ChangeLogRepository;
 import docSharing.repository.DocumentRepository;
 import org.apache.logging.log4j.LogManager;
@@ -28,7 +25,7 @@ public class ChangeLogService {
     @Autowired
     private ChangeLogRepository changeLogRepository;
 
-    private Map<Long, Queue<UpdateMessage>> documentWithLogs = new HashMap<>();
+    private Map<Long, Queue<UpdateResponseMessage>> documentWithLogs = new HashMap<>();
     private Map<String, List<UpdateMessage>> changeLogWithUpdates = new HashMap<>();
     private Map<String, ChangeLog> currentLogMessageSequenceInProcess = new HashMap<>();
     private List<ChangeLog> changeLogList = Collections.synchronizedList(new LinkedList<>());
@@ -45,7 +42,7 @@ public class ChangeLogService {
      * messages to the queue. Invokes runner thread for log processing.
      * @param message
      */
-    public void addLog(UpdateMessage message) {
+    public void addLog(UpdateResponseMessage message) {
         LOGGER.debug("Adding message to queue");
         documentWithLogs.computeIfAbsent(message.getDocumentId(), k -> new ConcurrentLinkedQueue<>()).add(message);
         if (!runnerThread.isAlive()) {
@@ -65,13 +62,13 @@ public class ChangeLogService {
             Long[] docIdsArr = docIdsSet.toArray(new Long[docIdsSet.size()]);
             int index = ThreadLocalRandom.current().nextInt(docIdsSet.size());
             Long docId = docIdsArr[index];
-            Queue<UpdateMessage> updateMessages = documentWithLogs.get(docId);
+            Queue<UpdateResponseMessage> updateMessages = documentWithLogs.get(docId);
             LOGGER.info("Building logs for document:%d");
             while (!updateMessages.isEmpty()) {
-                UpdateMessage message = updateMessages.poll();
+                UpdateResponseMessage message = updateMessages.poll();
                 StringBuffer sb = new StringBuffer(message.getContent());
                 ChangeLog changeLog = new ChangeLog(message.getDocumentId(), message.getPosition(),
-                            message.getUser(), message.getContent());
+                        message.getEmail(), message.getContent(), message.getType());
 //                if (currentLogMessageSequenceInProcess.containsKey(message.getUser())) {
 //                    ChangeLog changeLog = currentLogMessageSequenceInProcess
 //                            .get(message.getUser());
@@ -115,8 +112,9 @@ public class ChangeLogService {
                 }
 
                 while (!updateMessages.isEmpty() && updateMessages.peek().getPosition()
-                        == message.getPosition() + 1 && updateMessages.peek().getUser()
-                        .equals(message.getUser())) {
+                        == message.getPosition() + 1 && updateMessages.peek().getEmail()
+                        .equals(message.getEmail()) && updateMessages.peek().getType()
+                        == message.getType()) {
                     message = updateMessages.poll();
                     sb.append(message.getContent());
                     changeLog.forwardChangeLogEndIndex();

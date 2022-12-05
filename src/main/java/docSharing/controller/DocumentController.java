@@ -1,9 +1,6 @@
 package docSharing.controller;
 
-import docSharing.Entities.Document;
-import docSharing.Entities.Role;
-import docSharing.Entities.UpdateMessage;
-import docSharing.Entities.User;
+import docSharing.Entities.*;
 import docSharing.service.AuthenticationService;
 import docSharing.service.ChangeLogService;
 import docSharing.service.DocumentService;
@@ -16,11 +13,8 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestBody;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -54,11 +48,11 @@ public class DocumentController {
     @MessageMapping("/join/")
     @SendTo("/topic/viewers/")
     public Map<Long,Map<String, Role>>  sendJoinMessage(JoinDocument joinUser) {
-        Long userId = authenticationService.isLoggedIn(joinUser.user);
+        Long userId = authenticationService.isLoggedIn(joinUser.getUser());
         User user = userService.getUserById(userId);
         String userEmail=user.getEmail();
-        Document document = documentService.getDocumentById(joinUser.docId, userId);
-        Map<String, Role> usersEmails = documentsViewers.get(joinUser.docId);
+        Document document = documentService.getDocumentById(joinUser.getDocId(), userId);
+        Map<String, Role> usersEmails = documentsViewers.get(joinUser.getDocId());
         if(usersEmails==null) {
             usersEmails = new HashMap<>();
             Role role = document.getUserRole(user);
@@ -66,7 +60,7 @@ public class DocumentController {
                 throw new IllegalArgumentException("User does not have access to the document");
             }
             usersEmails.put(userEmail, role);
-            documentsViewers.put(joinUser.docId,usersEmails);
+            documentsViewers.put(joinUser.getDocId(),usersEmails);
         }
         else if (usersEmails.get(userEmail) == null) {
             Role role = document.getUserRole(user);
@@ -86,11 +80,15 @@ public class DocumentController {
      */
     @MessageMapping("/update/")
     @SendTo("/topic/updates/")
-    public UpdateMessage sendPlainMessage(UpdateMessage message) {
+    public UpdateResponseMessage sendPlainMessage(UpdateMessage message) {
         LOGGER.info("request from the client to update document's content");
         Long userId = authenticationService.isLoggedIn(message.getUser());
-        changeLogService.addLog(message);
-        return documentService.updateContent(message,userId);
+        documentService.updateContent(message, userId);
+        String email = authenticationService.getUserByToken(message.getUser()).getEmail();
+        UpdateResponseMessage responseMessage = new UpdateResponseMessage(message.getContent(),
+                message.getDocumentId(), message.getType(), message.getPosition(), email);
+        changeLogService.addLog(responseMessage);
+        return responseMessage;
     }
 
     /**
@@ -102,39 +100,14 @@ public class DocumentController {
      */
     @MessageMapping("/deleteViewer/")
     @SendTo("/topic/viewers/")
-    public Map<Long,Map<String, Role>> deleteViewer(@Payload Long docId, @Header String token) {
+    public Map<Long, Map<String, Role>> deleteViewer(@Payload Long docId, @Header String token) {
         LOGGER.info("Request from the client to delete viewer from document viewer's list");
-        String userEmail=userService.getUserById(authenticationService.isLoggedIn(token)).getEmail();
+        String userEmail = userService.getUserById(authenticationService.isLoggedIn(token)).getEmail();
         if (documentsViewers.get(docId) == null){
             return documentsViewers;
         }
         documentsViewers.get(docId).remove(userEmail);
-        LOGGER.info(String.format("Viewer with email: %s deleted from viewer's list",userEmail));
+        LOGGER.info(String.format("Viewer with email: %s deleted from viewer's list", userEmail));
         return documentsViewers;
-    }
-
-    /**
-     * Class for each user viewing a document
-     */
-    static class JoinDocument {
-        private String user;
-        private Long docId;
-        public JoinDocument() {
-        }
-        public void setDocId(Long docId) {
-            this.docId = docId;
-        }
-
-        public Long getDocId() {
-            return docId;
-        }
-
-        public String getUser() {
-            return user;
-        }
-
-        public void setUser(String user) {
-            this.user = user;
-        }
     }
 }

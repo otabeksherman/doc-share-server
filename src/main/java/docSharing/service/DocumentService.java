@@ -143,7 +143,7 @@ public class DocumentService {
      * @throws IllegalArgumentException if the user id is incorrect, if the document id is incorrect,
      * or if the user doesn't have editing permissions for the document.
      */
-    public UpdateMessage updateContent(UpdateMessage update, Long userId) {
+    public void updateContent(UpdateMessage update, Long userId) {
         Optional<User> user = userRepository.findById(userId);
         if (!user.isPresent()) {
             LOGGER.debug(String.format("user:%d doesn't exist", userId));
@@ -169,7 +169,7 @@ public class DocumentService {
         }
 
         LOGGER.debug(String.format("sent change to document changer of document:%d", document.get().getId()));
-        return changers.get(update.getDocumentId()).addUpdate(update);
+        changers.get(update.getDocumentId()).addUpdate(update);
     }
 
     /**
@@ -252,7 +252,7 @@ public class DocumentService {
          * @param message the update message with how to change the body of the document.
          * @return the update message sent to the function, possibly modified if needed to solve confilcts.
          */
-        public UpdateMessage addUpdate(UpdateMessage message) {
+        public void addUpdate(UpdateMessage message) {
             changesQueue.add(message);
             if (!runnerThread.isAlive()) {
                 LOGGER.info(String.format("Executing runner of document changer for document:%d", document.getId()));
@@ -260,7 +260,6 @@ public class DocumentService {
                 runnerThread.start();
             }
             while (changesQueue.contains(message)) {}
-            return message;
         }
 
         /**

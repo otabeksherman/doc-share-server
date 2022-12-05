@@ -41,7 +41,7 @@ public class DocumentControllerUnitTests {
 
     Document document;
 
-    DocumentController.JoinDocument joinDocument;
+    JoinDocument joinDocument;
 
     @BeforeEach
     void setup() {
@@ -56,7 +56,7 @@ public class DocumentControllerUnitTests {
         document = new Document(user, "title", mainFolder);
         document.setId(2L);
 
-        joinDocument = new DocumentController.JoinDocument();
+        joinDocument = new JoinDocument();
         joinDocument.setUser("qweASD123zxc");
         joinDocument.setDocId(document.getId());
 
@@ -137,19 +137,6 @@ public class DocumentControllerUnitTests {
         updateMessage.setUser("qweASD123zxc");
 
         assertThrows(IllegalArgumentException.class, () -> documentController.sendPlainMessage(updateMessage));
-    }
-
-    @Test
-    void sendPlainMessage_GoodRequest_returnUpdateMessage() {
-        when(authenticationService.isLoggedIn("qweASD123zxc")).thenReturn(user.getId());
-        UpdateMessage updateMessage = new UpdateMessage();
-        updateMessage.setUser("qweASD123zxc");
-        updateMessage.setType(UpdateType.APPEND);
-        when(documentService.updateContent(updateMessage, user.getId())).thenReturn(updateMessage);
-
-        UpdateMessage updateReturned = documentController.sendPlainMessage(updateMessage);
-
-        assertEquals(updateMessage.getType(), updateReturned.getType());
     }
 
     @Test
