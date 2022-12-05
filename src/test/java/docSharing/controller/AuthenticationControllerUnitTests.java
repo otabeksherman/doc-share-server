@@ -1,6 +1,7 @@
 package docSharing.controller;
 
 import docSharing.Entities.LoginRequest;
+import docSharing.Entities.LoginResponse;
 import docSharing.controller.AuthenticationController;
 import docSharing.service.AuthenticationService;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,10 @@ import static org.mockito.Mockito.when;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class AuthenticationControllerUnitTests {
+    private static final String EMAIL_CORRECT = "sharedoc@gmail.com";
+    private static final String EMAIL_INCORRECT = "sharedoc";
+    private static final String PASSWORD_CORRECT = "123456Qw";
+    private static final String PASSWORD_INCORRECT = "123456";
     @Autowired
     AuthenticationController authenticationController;
 
@@ -62,10 +67,12 @@ public class AuthenticationControllerUnitTests {
     }
 
     @Test
-    void login_GoodLogin_throwsResponseStatusException() {
-        LoginRequest userDetails = new LoginRequest("gideon.jaffe@gmail.com", "qwer1234");
-        when(authenticationService.login(userDetails)).thenReturn("qweASDzxc123");
+    void login_throwsResponseStatusException() {
+        String token = "qweASDzxc123";
+        LoginRequest userDetails = new LoginRequest(EMAIL_CORRECT, PASSWORD_CORRECT);
+        LoginResponse response = new LoginResponse(token, EMAIL_CORRECT);
+        when(authenticationService.login(userDetails)).thenReturn(token);
 
-        assertEquals(ResponseEntity.ok("qweASDzxc123"), authenticationController.login(userDetails));
+        assertEquals(ResponseEntity.ok(response), authenticationController.login(userDetails));
     }
 }

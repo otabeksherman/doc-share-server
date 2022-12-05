@@ -89,7 +89,11 @@ public class UserController {
      */
     @PatchMapping("logout")
     public ResponseEntity<String> logout(@RequestParam String token) {
-        LOGGER.info(String.format("logout for user with token: %s",token));
-        return new ResponseEntity<>(authenticationService.logout(token),HttpStatus.OK);
+        if (authenticationService.isLoggedIn(token) != null) {
+            LOGGER.info(String.format("logout for user with token: %s",token));
+            return new ResponseEntity<>(authenticationService.logout(token),HttpStatus.OK);
+        } else {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token");
+        }
     }
 }
