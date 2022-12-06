@@ -28,12 +28,34 @@ public class ChangeLog {
 
     public ChangeLog(Long documentId, int position, String email, String body, UpdateType updateType) {
         this.documentId = documentId;
-        this.startPosition = position;
-        this.endPosition = startPosition + 1;
         this.email = email;
         this.body = body;
         this.lastModified = LocalDateTime.now();
         this.updateType = updateType;
+        initPositions(updateType, position, body);
+    }
+
+    private void initPositions(UpdateType updateType, int position, String body) {
+        switch (updateType) {
+            case APPEND:
+                 this.startPosition = position;
+                 this.endPosition = position + 1;
+                 break;
+            case APPEND_RANGE:
+                this.startPosition = position;
+                this.endPosition = position + body.length();
+                break;
+            case DELETE:
+                this.endPosition = position;
+                this.startPosition = position - 1;
+                break;
+            case DELETE_RANGE:
+                this.endPosition = position;
+                this.startPosition = position - body.length();
+                break;
+            default:
+                throw new UnsupportedOperationException();
+        }
     }
 
     public Long getId() {
@@ -68,6 +90,10 @@ public class ChangeLog {
         this.body = body + txt;
     }
 
+    public void appendTextToHead(String txt) {
+        this.body = txt + body;
+    }
+
     public int getEndPosition() {
         return endPosition;
     }
@@ -89,15 +115,54 @@ public class ChangeLog {
     }
 
     public void forwardChangeLogStartIndex() {
-        this.startPosition = startPosition + 1;
+        forwardChangeLogStartIndex(1);
+    }
+
+    public void forwardChangeLogStartIndex(int steps) {
+        this.startPosition = startPosition + steps;
     }
 
     public void forwardChangeLogEndIndex() {
-        this.endPosition = endPosition + 1;
+        forwardChangeLogEndIndex(1);
+    }
+
+    public void forwardChangeLogEndIndex(int steps) {
+        this.endPosition = endPosition + steps;
     }
 
     public void forwardChangeLogIndexes() {
         forwardChangeLogStartIndex();
         forwardChangeLogEndIndex();
+    }
+
+    public void forwardChangeLogIndexes(int steps) {
+        forwardChangeLogStartIndex(steps);
+        forwardChangeLogEndIndex(steps);
+    }
+
+    public void backChangeLogStartIndex() {
+        backChangeLogStartIndex(1);
+    }
+
+    public void backChangeLogStartIndex(int steps) {
+        this.endPosition = endPosition - steps;
+    }
+
+    public void backChangeLogEndIndex() {
+        backChangeLogEndIndex(1);
+    }
+
+    public void backChangeLogEndIndex(int steps) {
+        this.endPosition = endPosition - steps;
+    }
+
+    public void backChangeLogIndexes() {
+        forwardChangeLogStartIndex(1);
+        forwardChangeLogEndIndex(1);
+    }
+
+    public void backChangeLogIndexes(int steps) {
+        forwardChangeLogStartIndex(steps);
+        forwardChangeLogEndIndex(steps);
     }
 }
